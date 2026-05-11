@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GW · 제품 검색</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --bg2: #141414;
+    --bg3: #1c1c1c;
+    --border: #2a2a2a;
+    --border2: #333;
+    --text: #e8e8e8;
+    --text2: #999;
+    --text3: #555;
+    --accent: #c8ff00;
+    --accent2: #a8d900;
+    --red: #ff4444;
+    --mono: 'Space Mono', monospace;
+    --sans: 'Noto Sans KR', sans-serif;
+    --r: 6px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 100;
+  }
+
+  .logo {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    color: var(--text);
+  }
+  .logo span { color: var(--accent); }
+
+  .conn-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text2);
+  }
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--text3);
+    transition: background .3s;
+  }
+  .dot.ok { background: var(--accent); }
+  .dot.err { background: var(--red); }
+
+  /* ── SEARCH BAR ── */
+  .search-wrap {
+    padding: 20px 24px 0;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .search-row {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+  }
+
+  .search-input-wrap {
+    flex: 1;
+    position: relative;
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text3);
+    font-size: 15px;
+    pointer-events: none;
+  }
+
+  input[type="text"] {
+    width: 100%;
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: var(--r);
+    padding: 12px 14px 12px 40px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    outline: none;
+    transition: border-color .2s;
+  }
+  input[type="text"]:focus { border-color: var(--accent); }
+  input[type="text"]::placeholder { color: var(--text3); }
+
+  .btn-search {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: var(--r);
+    padding: 0 20px;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: .05em;
+    white-space: nowrap;
+    transition: background .15s;
+  }
+  .btn-search:hover { background: var(--accent2); }
+
+  /* ── FILTER CHIPS ── */
+  .filter-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+
+  .filter-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: .08em;
+    margin-right: 2px;
+  }
+
+  .chip {
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border2);
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--text2);
+    cursor: pointer;
+    transition: all .15s;
+    background: transparent;
+  }
+  .chip:hover { border-color: var(--accent); color: var(--accent); }
+  .chip.on { border-color: var(--accent); color: #000; background: var(--accent); }
+
+  /* ── STATS ── */
+  .stats-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 24px;
+    max-width: 900px;
+    margin: 0 auto;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .stat-count {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text3);
+  }
+  .stat-count b {
+    color: var(--accent);
+    font-size: 13px;
+  }
+
+  /* ── RESULTS TABLE ── */
+  .results-wrap {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 24px 40px;
+  }
+
+  .table-wrap {
+    margin-top: 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    overflow: hidden;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  thead tr {
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border2);
+  }
+
+  th {
+    padding: 10px 14px;
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .1em;
+    color: var(--text3);
+    font-weight: 400;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+    transition: color .15s;
+  }
+  th:hover { color: var(--text2); }
+  th.sort-asc::after { content: ' ▲'; color: var(--accent); }
+  th.sort-desc::after { content: ' ▼'; color: var(--accent); }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background .1s;
+    cursor: default;
+  }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--bg2); }
+
+  td {
+    padding: 10px 14px;
+    font-size: 13px;
+    vertical-align: middle;
+  }
+
+  .td-sku {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+
+  .td-cat {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    white-space: nowrap;
+  }
+
+  .td-name { font-weight: 500; }
+
+  .td-opt {
+    color: var(--text2);
+    font-size: 12px;
+  }
+
+  .td-loc {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text2);
+  }
+
+  .td-price {
+    font-family: var(--mono);
+    font-size: 12px;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .td-barcode {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text2);
+    white-space: nowrap;
+  }
+
+  .td-brand {
+    font-size: 12px;
+    color: var(--text2);
+    white-space: nowrap;
+  }
+
+  /* ── EMPTY / LOADING ── */
+  .empty {
+    padding: 60px 24px;
+    text-align: center;
+    color: var(--text3);
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: .06em;
+  }
+  .empty .em-icon { font-size: 32px; margin-bottom: 12px; }
+
+  .loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 60px;
+    color: var(--text3);
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid var(--border2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin .6s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── PAGINATION ── */
+  .paging {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+  }
+
+  .page-btn {
+    width: 32px; height: 32px;
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text2);
+    font-family: var(--mono);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all .15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .page-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .page-btn.on { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 700; }
+  .page-btn:disabled { opacity: .3; cursor: default; }
+
+  /* ── DETAIL MODAL ── */
+  .modal-bg {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.7);
+    z-index: 200;
+    backdrop-filter: blur(4px);
+  }
+  .modal-bg.open { display: flex; align-items: center; justify-content: center; padding: 20px; }
+
+  .modal {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    width: 100%;
+    max-width: 560px;
+    max-height: 85vh;
+    overflow-y: auto;
+    padding: 24px;
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .modal-cat {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    margin-bottom: 4px;
+  }
+
+  .modal-name {
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
+  .modal-opt {
+    font-size: 13px;
+    color: var(--text2);
+    margin-top: 3px;
+  }
+
+  .modal-close {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    color: var(--text2);
+    cursor: pointer;
+    width: 28px; height: 28px;
+    font-size: 16px;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .15s;
+  }
+  .modal-close:hover { border-color: var(--red); color: var(--red); }
+
+  .modal-img {
+    width: 100%;
+    border-radius: var(--r);
+    background: var(--bg3);
+    margin-bottom: 20px;
+    overflow: hidden;
+    aspect-ratio: 1;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 48px;
+  }
+  .modal-img img {
+    width: 100%; height: 100%;
+    object-fit: contain;
+  }
+
+  .modal-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .modal-field {
+    background: var(--bg3);
+    border-radius: var(--r);
+    padding: 10px 12px;
+  }
+  .modal-field.full { grid-column: 1 / -1; }
+
+  .mf-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: .1em;
+    color: var(--text3);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .mf-val {
+    font-size: 13px;
+    font-weight: 500;
+    word-break: break-all;
+  }
+
+  .mf-val.mono { font-family: var(--mono); font-size: 12px; color: var(--accent); }
+  .mf-val.price { font-family: var(--mono); font-size: 14px; }
+  .mf-val.dim { color: var(--text2); }
+
+  .modal-links {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .link-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px;
+    border-radius: var(--r);
+    font-size: 12px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: opacity .15s;
+  }
+  .link-btn:hover { opacity: .8; }
+  .link-btn.naver { background: #03c75a; color: #fff; }
+  .link-btn.shopify { background: #96bf48; color: #fff; }
+  .link-btn.disabled { background: var(--bg3); color: var(--text3); cursor: default; }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  @media (max-width: 640px) {
+    header { padding: 12px 16px; }
+    .search-wrap, .results-wrap { padding-left: 16px; padding-right: 16px; }
+    .stats-row { padding-left: 16px; padding-right: 16px; }
+    .modal-grid { grid-template-columns: 1fr; }
+    td:nth-child(n+5) { display: none; }
+    th:nth-child(n+5) { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">GEON<span>.</span>search</div>
+  <div class="conn-badge">
+    <div class="dot" id="dot"></div>
+    <span id="conn-text">연결 중...</span>
+  </div>
+</header>
+
+<div class="search-wrap">
+  <div class="search-row">
+    <div class="search-input-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="q" placeholder="품목명, SKU, 바코드, 브랜드, 카테고리, 위치코드 검색..." autocomplete="off" />
+    </div>
+    <button class="btn-search" onclick="doSearch()">검색</button>
+  </div>
+  <div class="filter-row">
+    <span class="filter-label">CATEGORY</span>
+    <button class="chip on" data-cat="all" onclick="setCategory(this,'all')">전체</button>
+    <button class="chip" data-cat="housing" onclick="setCategory(this,'housing')">housing</button>
+    <button class="chip" data-cat="pcb" onclick="setCategory(this,'pcb')">pcb</button>
+    <button class="chip" data-cat="plate" onclick="setCategory(this,'plate')">plate</button>
+    <button class="chip" data-cat="switch" onclick="setCategory(this,'switch')">switch</button>
+    <button class="chip" data-cat="stabilizer" onclick="setCategory(this,'stabilizer')">stabilizer</button>
+    <button class="chip" data-cat="keycap" onclick="setCategory(this,'keycap')">keycap</button>
+    <button class="chip" data-cat="foam" onclick="setCategory(this,'foam')">foam</button>
+    <button class="chip" data-cat="lubricant" onclick="setCategory(this,'lubricant')">lubricant</button>
+    <button class="chip" data-cat="cable" onclick="setCategory(this,'cable')">cable</button>
+    <button class="chip" data-cat="deskmat" onclick="setCategory(this,'deskmat')">deskmat</button>
+    <button class="chip" data-cat="wooting" onclick="setCategory(this,'wooting')">wooting</button>
+    <button class="chip" data-cat="ec" onclick="setCategory(this,'ec')">ec</button>
+    <button class="chip" data-cat="etc" onclick="setCategory(this,'etc')">etc</button>
+  </div>
+</div>
+
+<div class="stats-row" id="stats-row" style="display:none">
+  <div class="stat-count" id="stat-count"></div>
+</div>
+
+<div class="results-wrap">
+  <div id="results">
+    <div class="empty">
+      <div class="em-icon">🔎</div>
+      검색어를 입력하거나 카테고리를 선택하세요
+    </div>
+  </div>
+</div>
+
+<!-- 상세 모달 -->
+<div class="modal-bg" id="modal-bg" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-cat" id="m-cat"></div>
+        <div class="modal-name" id="m-name"></div>
+        <div class="modal-opt" id="m-opt"></div>
+      </div>
+      <button class="modal-close" onclick="closeModalBtn()">✕</button>
+    </div>
+    <div class="modal-img" id="m-img"></div>
+    <div class="modal-grid" id="m-grid"></div>
+    <div class="modal-links" id="m-links"></div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://fnznnrdgvcroiimnokaj.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZuem5ucmRndmNyb2lpbW5va2FqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwMjcxMzUsImV4cCI6MjA5MzYwMzEzNX0.CUQAwydrYUqCGChE_ZUc6t7h0vL_MqGd_e2j4Bqw-UY';
+
+const PAGE_SIZE = 50;
+let allResults = [];
+let currentPage = 1;
+let sortCol = null;
+let sortDir = 'asc';
+let selectedCat = 'all';
+
+const headers = {
+  'apikey': SUPABASE_KEY,
+  'Authorization': `Bearer ${SUPABASE_KEY}`,
+};
+
+// ── 연결 상태
+async function checkConn() {
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/products?select=id&limit=1`, { headers });
+    const ok = r.ok;
+    document.getElementById('dot').className = 'dot ' + (ok ? 'ok' : 'err');
+    document.getElementById('conn-text').textContent = ok ? '연결됨' : '연결 실패';
+  } catch {
+    document.getElementById('dot').className = 'dot err';
+    document.getElementById('conn-text').textContent = '연결 실패';
+  }
+}
+
+// ── 카테고리 필터
+function setCategory(el, cat) {
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
+  el.classList.add('on');
+  selectedCat = cat;
+  doSearch();
+}
+
+// ── 검색
+async function doSearch() {
+  const q = document.getElementById('q').value.trim();
+  if (!q && selectedCat === 'all') {
+    document.getElementById('results').innerHTML = `<div class="empty"><div class="em-icon">🔎</div>검색어를 입력하거나 카테고리를 선택하세요</div>`;
+    document.getElementById('stats-row').style.display = 'none';
+    return;
+  }
+
+  document.getElementById('results').innerHTML = `<div class="loading"><div class="spinner"></div>검색 중...</div>`;
+  document.getElementById('stats-row').style.display = 'none';
+
+  try {
+    let url = `${SUPABASE_URL}/rest/v1/products?select=*&order=sku_code`;
+
+    // 카테고리 필터
+    if (selectedCat !== 'all') url += `&category=eq.${selectedCat}`;
+
+    // 검색어 필터 (OR 조건)
+    if (q) {
+      const encoded = encodeURIComponent(q);
+      url += `&or=(sku_code.ilike.*${encoded}*,product_name.ilike.*${encoded}*,barcode.ilike.*${encoded}*,barcode_sub.ilike.*${encoded}*,brand.ilike.*${encoded}*,location_code.ilike.*${encoded}*,category.ilike.*${encoded}*)`;
+    }
+
+    // 전체 가져오기 (페이지네이션 처리)
+    let allData = [];
+    let from = 0;
+    while (true) {
+      const r = await fetch(url, {
+        headers: { ...headers, 'Range': `${from}-${from + 999}`, 'Range-Unit': 'items' }
+      });
+      const batch = await r.json();
+      allData = allData.concat(batch);
+      if (batch.length < 1000) break;
+      from += 1000;
+    }
+
+    allResults = allData;
+    currentPage = 1;
+    sortCol = null;
+    renderTable();
+  } catch (e) {
+    document.getElementById('results').innerHTML = `<div class="empty"><div class="em-icon">⚠️</div>오류: ${e.message}</div>`;
+  }
+}
+
+// ── 정렬
+function sortBy(col) {
+  if (sortCol === col) {
+    sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortCol = col;
+    sortDir = 'asc';
+  }
+  currentPage = 1;
+  renderTable();
+}
+
+function getSorted(data) {
+  if (!sortCol) return data;
+  return [...data].sort((a, b) => {
+    const va = (a[sortCol] || '').toString().toLowerCase();
+    const vb = (b[sortCol] || '').toString().toLowerCase();
+    const n = va.localeCompare(vb, 'ko');
+    return sortDir === 'asc' ? n : -n;
+  });
+}
+
+// ── 테이블 렌더
+function renderTable() {
+  const sorted = getSorted(allResults);
+  const total = sorted.length;
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const page = sorted.slice(start, start + PAGE_SIZE);
+
+  // 통계
+  document.getElementById('stats-row').style.display = 'flex';
+  document.getElementById('stat-count').innerHTML = `총 <b>${total.toLocaleString()}</b>개 품목`;
+
+  if (total === 0) {
+    document.getElementById('results').innerHTML = `<div class="empty"><div class="em-icon">😶</div>검색 결과가 없어요</div>`;
+    return;
+  }
+
+  const cols = [
+    { key: 'sku_code',      label: 'SKU' },
+    { key: 'category',      label: 'CATEGORY' },
+    { key: 'brand',         label: 'BRAND' },
+    { key: 'product_name',  label: 'PRODUCT' },
+    { key: 'option',        label: 'OPTION' },
+    { key: 'barcode',       label: 'BARCODE' },
+    { key: 'location_code', label: 'LOCATION' },
+    { key: 'price',         label: 'PRICE' },
+  ];
+
+  const thHTML = cols.map(c => {
+    let cls = '';
+    if (sortCol === c.key) cls = sortDir === 'asc' ? 'sort-asc' : 'sort-desc';
+    return `<th class="${cls}" onclick="sortBy('${c.key}')">${c.label}</th>`;
+  }).join('');
+
+  const rows = page.map((p, i) => {
+    const price = p.price ? '₩' + Number(p.price).toLocaleString() : '—';
+    const barcode = p.barcode || '—';
+    const loc = p.location_code || '—';
+    const opt = p.option && p.option.toUpperCase() !== 'N/A' ? p.option : '—';
+    const brand = p.brand || '—';
+    return `<tr onclick="openModal(${start + i})">
+      <td class="td-sku">${esc(p.sku_code || '')}</td>
+      <td class="td-cat">${esc(p.category || '')}</td>
+      <td class="td-brand">${esc(brand)}</td>
+      <td class="td-name">${esc(p.product_name || '')}</td>
+      <td class="td-opt">${esc(opt)}</td>
+      <td class="td-barcode">${esc(barcode)}</td>
+      <td class="td-loc">${esc(loc)}</td>
+      <td class="td-price">${price}</td>
+    </tr>`;
+  }).join('');
+
+  // 페이지네이션
+  let pagingHTML = '';
+  if (totalPages > 1) {
+    const prevDis = currentPage === 1 ? 'disabled' : '';
+    const nextDis = currentPage === totalPages ? 'disabled' : '';
+    pagingHTML = `<div class="paging">
+      <button class="page-btn" onclick="goPage(${currentPage-1})" ${prevDis}>‹</button>`;
+    const range = getPageRange(currentPage, totalPages);
+    range.forEach(p => {
+      if (p === '...') pagingHTML += `<span style="color:var(--text3);padding:0 4px">…</span>`;
+      else pagingHTML += `<button class="page-btn${p === currentPage ? ' on' : ''}" onclick="goPage(${p})">${p}</button>`;
+    });
+    pagingHTML += `<button class="page-btn" onclick="goPage(${currentPage+1})" ${nextDis}>›</button></div>`;
+  }
+
+  document.getElementById('results').innerHTML = `
+    <div class="table-wrap">
+      <table>
+        <thead><tr>${thHTML}</tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    ${pagingHTML}
+  `;
+}
+
+function getPageRange(cur, total) {
+  if (total <= 7) return Array.from({length: total}, (_, i) => i + 1);
+  const pages = [];
+  if (cur <= 4) {
+    for (let i = 1; i <= 5; i++) pages.push(i);
+    pages.push('...', total);
+  } else if (cur >= total - 3) {
+    pages.push(1, '...');
+    for (let i = total - 4; i <= total; i++) pages.push(i);
+  } else {
+    pages.push(1, '...', cur - 1, cur, cur + 1, '...', total);
+  }
+  return pages;
+}
+
+function goPage(p) {
+  currentPage = p;
+  renderTable();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── 상세 모달
+function openModal(idx) {
+  const sorted = getSorted(allResults);
+  const p = sorted[idx];
+  if (!p) return;
+
+  document.getElementById('m-cat').textContent = p.category || '';
+  document.getElementById('m-name').textContent = p.product_name || '-';
+  const opt = p.option && p.option.toUpperCase() !== 'N/A' ? p.option : '';
+  document.getElementById('m-opt').textContent = opt;
+
+  // 이미지
+  const imgEl = document.getElementById('m-img');
+  if (p.image_url) {
+    imgEl.innerHTML = `<img src="${esc(p.image_url)}" onerror="this.parentNode.innerHTML='📦'" />`;
+  } else {
+    imgEl.innerHTML = '📦';
+  }
+
+  // 필드
+  const fields = [
+    { label: 'SKU 코드',       val: p.sku_code,            cls: 'mono' },
+    { label: '브랜드',          val: p.brand,               cls: '' },
+    { label: '바코드',          val: p.barcode,             cls: 'mono' },
+    { label: '보조 바코드',     val: p.barcode_sub,         cls: 'mono' },
+    { label: '위치 코드',       val: p.location_code,       cls: 'mono' },
+    { label: '가격',            val: p.price ? '₩' + Number(p.price).toLocaleString() : null, cls: 'price' },
+    { label: '네이버 제품명',   val: p.naver_product_name,  cls: '', full: true },
+    { label: '네이버 옵션명',   val: p.naver_option_name,   cls: '', full: true },
+    { label: '특이사항',        val: p.notes,               cls: '', full: true },
+    { label: '작성일',          val: p.created_at,          cls: 'dim' },
+  ];
+
+  const gridHTML = fields
+    .filter(f => f.val)
+    .map(f => `<div class="modal-field${f.full ? ' full' : ''}">
+      <div class="mf-label">${f.label}</div>
+      <div class="mf-val ${f.cls}">${esc(f.val)}</div>
+    </div>`).join('');
+
+  document.getElementById('m-grid').innerHTML = gridHTML;
+
+  // 링크
+  const naver = p.naver_url
+    ? `<a class="link-btn naver" href="${esc(p.naver_url)}" target="_blank" rel="noopener">🛒 네이버 스토어</a>`
+    : `<span class="link-btn disabled">🛒 링크 없음</span>`;
+  const shopify = p.shopify_url
+    ? `<a class="link-btn shopify" href="${esc(p.shopify_url)}" target="_blank" rel="noopener">🛍 Shopify</a>`
+    : `<span class="link-btn disabled">🛍 링크 없음</span>`;
+  document.getElementById('m-links').innerHTML = naver + shopify;
+
+  document.getElementById('modal-bg').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('modal-bg')) closeModalBtn();
+}
+function closeModalBtn() {
+  document.getElementById('modal-bg').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// ── 엔터키 검색
+document.getElementById('q').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doSearch();
+});
+
+// ── ESC 모달 닫기
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModalBtn();
+});
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── 초기화
+checkConn();
+</script>
+</body>
+</html>
