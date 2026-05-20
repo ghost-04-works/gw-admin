@@ -650,6 +650,7 @@
   }
 </style>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
 <body>
 
@@ -1133,7 +1134,11 @@ function closeReqModalBtn() {
   document.body.style.overflow = '';
 }
 
-// ── Gmail API로 이메일 전송
+// ── EmailJS로 이메일 전송
+const EMAILJS_SERVICE_ID  = 'service_iqpp4yl';
+const EMAILJS_TEMPLATE_ID = 'template_rorxov8';
+const EMAILJS_PUBLIC_KEY  = 'HYv_Nu3sxLBNi0Yd5';
+
 async function submitRequest() {
   const cat   = document.getElementById('req-cat').value.trim();
   const name  = document.getElementById('req-name').value.trim();
@@ -1141,42 +1146,19 @@ async function submitRequest() {
   if (!cat)  { setReqStatus('카테고리를 선택해주세요.', false); return; }
   if (!name) { setReqStatus('품목명을 입력해주세요.', false); return; }
 
-  const opt     = document.getElementById('req-opt').value.trim() || 'N/A';
-  const brand   = document.getElementById('req-brand').value.trim();
-  const price   = document.getElementById('req-price').value.trim();
-  const barcode = document.getElementById('req-barcode').value.trim();
-  const loc     = document.getElementById('req-loc').value.trim();
-  const barcode2= document.getElementById('req-barcode2').value.trim();
-  const nname   = document.getElementById('req-nname').value.trim();
-  const nopt    = document.getElementById('req-nopt').value.trim();
-  const nurl    = document.getElementById('req-nurl').value.trim();
-  const surl    = document.getElementById('req-surl').value.trim();
-  const notes   = document.getElementById('req-notes').value.trim();
+  const opt      = document.getElementById('req-opt').value.trim() || 'N/A';
+  const brand    = document.getElementById('req-brand').value.trim() || '-';
+  const price    = document.getElementById('req-price').value.trim() || '-';
+  const barcode  = document.getElementById('req-barcode').value.trim() || '-';
+  const barcode2 = document.getElementById('req-barcode2').value.trim() || '-';
+  const loc      = document.getElementById('req-loc').value.trim() || '-';
+  const nname    = document.getElementById('req-nname').value.trim() || '-';
+  const nopt     = document.getElementById('req-nopt').value.trim() || '-';
+  const nurl     = document.getElementById('req-nurl').value.trim() || '-';
+  const surl     = document.getElementById('req-surl').value.trim() || '-';
+  const notes    = document.getElementById('req-notes').value.trim() || '-';
 
   const requester = sessionStorage.getItem('gw-auth') || '알 수 없음';
-
-  const lines = [
-    `요청자: ${requester}`,
-    `요청일시: ${new Date().toLocaleString('ko-KR')}`,
-    '',
-    '── 입력 정보 ──────────────────',
-    `카테고리: ${cat}`,
-    `품목명: ${name}`,
-    `옵션: ${opt}`,
-    brand   ? `브랜드: ${brand}` : '',
-    price   ? `가격: ${price}` : '',
-    barcode ? `바코드: ${barcode}` : '',
-    barcode2? `보조바코드: ${barcode2}` : '',
-    loc     ? `위치코드: ${loc}` : '',
-    nname   ? `네이버 판매명: ${nname}` : '',
-    nopt    ? `네이버 옵션명: ${nopt}` : '',
-    nurl    ? `네이버 URL: ${nurl}` : '',
-    surl    ? `쇼피파이 URL: ${surl}` : '',
-    notes   ? `\n특이사항:\n${notes}` : '',
-  ].filter(l => l !== '').join('\n');
-
-  const subject = `[GW 신규 추가 요청] ${cat} / ${name} / ${opt}`;
-  const to = 'ghost@geon.works'; // ← 관리자 이메일
 
   const btn = document.getElementById('btn-req-submit');
   btn.disabled = true;
@@ -1184,45 +1166,31 @@ async function submitRequest() {
   setReqStatus('', false);
 
   try {
-    // Gmail API용 RFC 2822 메일 메시지 생성
-    const message = [
-      `To: ${to}`,
-      `From: ${requester}`,
-      `Subject: =?UTF-8?B?${btoa(unescape(encodeURIComponent(subject)))}?=`,
-      'MIME-Version: 1.0',
-      'Content-Type: text/plain; charset=UTF-8',
-      'Content-Transfer-Encoding: base64',
-      '',
-      btoa(unescape(encodeURIComponent(lines))),
-    ].join('\r\n');
+    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+      requester,
+      request_time:  new Date().toLocaleString('ko-KR'),
+      category:      cat,
+      product_name:  name,
+      option:        opt,
+      brand,
+      price,
+      barcode,
+      barcode2,
+      location_code: loc,
+      naver_name:    nname,
+      naver_option:  nopt,
+      naver_url:     nurl,
+      shopify_url:   surl,
+      notes,
+    }, EMAILJS_PUBLIC_KEY);
 
-    const encoded = btoa(message).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-
-    const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${googleAccessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ raw: encoded }),
-    });
-
-    if (res.ok) {
-      setReqStatus('✓ 전송 완료! 관리자가 확인 후 추가해드릴게요.', true);
-      // 폼 초기화
-      ['req-cat','req-name','req-opt','req-brand','req-price','req-barcode',
-       'req-barcode2','req-loc','req-nname','req-nopt','req-nurl','req-surl','req-notes']
-        .forEach(id => {
-          const el = document.getElementById(id);
-          if (el) el.value = '';
-        });
-      setTimeout(closeReqModalBtn, 2500);
-    } else {
-      const err = await res.json();
-      setReqStatus(`전송 실패: ${err.error?.message || res.status}`, false);
-    }
+    setReqStatus('✓ 전송 완료! 관리자가 확인 후 추가해드릴게요.', true);
+    ['req-cat','req-name','req-opt','req-brand','req-price','req-barcode',
+     'req-barcode2','req-loc','req-nname','req-nopt','req-nurl','req-surl','req-notes']
+      .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    setTimeout(closeReqModalBtn, 2500);
   } catch (e) {
-    setReqStatus(`오류: ${e.message}`, false);
+    setReqStatus(`전송 실패: ${JSON.stringify(e)}`, false);
   } finally {
     btn.disabled = false;
     btn.textContent = '전송';
@@ -1238,29 +1206,6 @@ function setReqStatus(msg, ok) {
 // ── Google OAuth
 const ALLOWED_DOMAIN = 'geon.works';
 const CLIENT_ID = '666157816733-0uu1dkoda0ljjslrd479j371snkj62t7.apps.googleusercontent.com';
-let googleAccessToken = null;
-
-// OAuth2 팝업으로 access_token 받기 (Gmail 권한 포함)
-function requestGmailToken() {
-  const scope = encodeURIComponent('https://www.googleapis.com/auth/gmail.send');
-  const redirectUri = encodeURIComponent(window.location.href.split('?')[0]);
-  const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${redirectUri}&response_type=token&scope=${scope}&prompt=none&login_hint=${encodeURIComponent(sessionStorage.getItem('gw-auth') || '')}`;
-
-  const popup = window.open(url, 'gmailauth', 'width=500,height=600');
-  const timer = setInterval(() => {
-    try {
-      if (popup.closed) { clearInterval(timer); return; }
-      const hash = popup.location.hash;
-      if (hash && hash.includes('access_token')) {
-        clearInterval(timer);
-        popup.close();
-        const params = new URLSearchParams(hash.slice(1));
-        googleAccessToken = params.get('access_token');
-        document.getElementById('btn-request').style.display = '';
-      }
-    } catch (_) {}
-  }, 300);
-}
 
 function initGoogleSignIn() {
   google.accounts.id.initialize({
@@ -1289,8 +1234,7 @@ function handleCredentialResponse(response) {
   if (domain === ALLOWED_DOMAIN) {
     sessionStorage.setItem('gw-auth', email);
     document.getElementById('lock-screen').style.display = 'none';
-    // Gmail access token 요청
-    requestGmailToken();
+    document.getElementById('btn-request').style.display = '';
   } else {
     document.getElementById('lock-error').textContent =
       `@${ALLOWED_DOMAIN} 계정만 사용할 수 있어요 (현재: ${email})`;
@@ -1309,8 +1253,7 @@ function parseJwt(token) {
 const savedAuth = sessionStorage.getItem('gw-auth');
 if (savedAuth && savedAuth.endsWith('@' + ALLOWED_DOMAIN)) {
   document.getElementById('lock-screen').style.display = 'none';
-  // 이미 로그인된 경우에도 Gmail token 시도
-  requestGmailToken();
+  document.getElementById('btn-request').style.display = '';
 }
 
 window.addEventListener('load', () => {
