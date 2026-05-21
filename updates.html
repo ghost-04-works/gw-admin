@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SKU 업데이트 내역 · GEONWORKS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:      #ffffff;
+    --bg2:     #f8f8f8;
+    --bg3:     #f2f2f2;
+    --border:  #e8e8e8;
+    --border2: #d4d4d4;
+    --text:    #111111;
+    --text2:   #555555;
+    --text3:   #999999;
+    --accent:  #111111;
+    --ok:      #2d7a4f;
+    --ok-bg:   #f0faf4;
+    --warn:    #c47a00;
+    --warn-bg: #fffbf0;
+    --err:     #c0392b;
+    --blue:    #1a56a0;
+    --blue-bg: #f0f5ff;
+    --r: 2px;
+    --font: 'Noto Sans KR', 'Pretendard', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; line-height: 1.6; min-height: 100vh; }
+
+  /* HEADER */
+  .site-header {
+    border-bottom: 1px solid var(--border);
+    padding: 0 40px; height: 60px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; background: var(--bg); z-index: 100;
+  }
+  .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text); }
+  .logo-text { font-size: 13px; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; }
+  .header-right { display: flex; align-items: center; gap: 20px; }
+  .header-nav { font-size: 12px; color: var(--text3); letter-spacing: .05em; }
+  .conn-badge { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text3); }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--border2); transition: background .3s; }
+  .dot.ok  { background: #4caf50; }
+  .dot.err { background: var(--err); }
+
+  /* PAGE TITLE */
+  .page-title-wrap { padding: 48px 40px 32px; border-bottom: 1px solid var(--border); }
+  .page-label { font-size: 11px; letter-spacing: .15em; color: var(--text3); text-transform: uppercase; margin-bottom: 8px; }
+  .page-title { font-size: 28px; font-weight: 300; letter-spacing: -.01em; }
+  .page-desc { margin-top: 10px; font-size: 13px; color: var(--text2); line-height: 1.7; }
+
+  /* MAIN */
+  main { max-width: 1000px; margin: 0 auto; padding: 36px 40px 80px; }
+
+  /* TAB */
+  .tab-row {
+    display: flex; gap: 0;
+    border: 1px solid var(--border2);
+    border-radius: var(--r); overflow: hidden;
+    margin-bottom: 24px; width: fit-content;
+  }
+  .tab {
+    background: transparent; border: none;
+    border-right: 1px solid var(--border2);
+    color: var(--text2); font-family: var(--font);
+    font-size: 12px; font-weight: 500;
+    padding: 9px 24px; cursor: pointer; transition: all .15s;
+  }
+  .tab:last-child { border-right: none; }
+  .tab:hover { background: var(--bg2); color: var(--text); }
+  .tab.active { background: var(--accent); color: #fff; }
+
+  /* RANGE */
+  .range-row { display: flex; gap: 6px; margin-bottom: 28px; align-items: center; }
+  .range-btn {
+    background: transparent; border: 1px solid var(--border2);
+    border-radius: 20px; color: var(--text2); font-family: var(--font);
+    font-size: 11px; padding: 4px 14px; cursor: pointer; transition: all .15s;
+  }
+  .range-btn:hover { border-color: var(--text); color: var(--text); }
+  .range-btn.active { background: var(--text); color: #fff; border-color: var(--text); }
+  .range-label { font-size: 11px; color: var(--text3); margin-left: 4px; }
+
+  /* DATE GROUP */
+  .date-group { margin-bottom: 36px; }
+  .date-header {
+    display: flex; align-items: center; gap: 10px;
+    padding-bottom: 10px; border-bottom: 1px solid var(--border); margin-bottom: 12px;
+  }
+  .date-label { font-size: 14px; font-weight: 600; }
+  .date-count { font-size: 12px; color: var(--text3); }
+  .badge { display: inline-flex; align-items: center; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 2px; }
+  .badge-new  { background: var(--blue-bg); color: var(--blue); }
+  .badge-edit { background: var(--warn-bg); color: var(--warn); }
+
+  /* TABLE */
+  .tbl-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { text-align: left; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--text3); padding: 6px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; font-weight: 500; }
+  td { padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--bg2); }
+  .td-sku   { font-size: 11px; color: var(--text3); white-space: nowrap; font-family: monospace; }
+  .td-cat   { font-size: 10px; text-transform: uppercase; color: var(--text3); letter-spacing: .06em; }
+  .td-name  { font-weight: 500; }
+  .td-opt   { color: var(--text2); font-size: 13px; }
+  .td-brand { color: var(--text3); font-size: 11px; }
+
+  /* LOG ITEM */
+  .log-item { border: 1px solid var(--border); border-radius: var(--r); padding: 14px 16px; margin-bottom: 8px; background: var(--bg); transition: background .15s; }
+  .log-item:hover { background: var(--bg2); }
+  .log-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .log-sku  { font-size: 12px; font-weight: 700; font-family: monospace; }
+  .log-name { font-size: 12px; color: var(--text2); }
+  .log-time { font-size: 10px; color: var(--text3); margin-left: auto; white-space: nowrap; font-family: monospace; }
+  .log-by   { font-size: 10px; color: var(--text3); }
+  .log-fields { display: flex; flex-direction: column; gap: 6px; }
+  .log-field  { display: flex; align-items: flex-start; gap: 10px; font-size: 12px; flex-wrap: wrap; }
+  .log-field-name { font-size: 10px; letter-spacing: .06em; color: var(--text3); text-transform: uppercase; min-width: 140px; padding-top: 1px; }
+  .log-values { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .log-old   { color: var(--err); text-decoration: line-through; opacity: .8; }
+  .log-arrow { color: var(--text3); }
+  .log-new   { color: var(--ok); }
+  .log-empty { color: var(--text3); font-style: italic; }
+
+  .empty   { text-align: center; color: var(--text3); font-size: 13px; padding: 60px 0; }
+  .loading { text-align: center; color: var(--text3); font-size: 12px; padding: 40px 0; }
+
+  /* FOOTER */
+  footer { border-top: 1px solid var(--border); padding: 24px 40px; display: flex; align-items: center; justify-content: space-between; }
+  .footer-logo { font-size: 12px; font-weight: 700; letter-spacing: .15em; color: var(--text); }
+  .footer-note { font-size: 11px; color: var(--text3); }
+
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  @media (max-width: 768px) {
+    .site-header { padding: 0 20px; }
+    .header-nav  { display: none; }
+    .page-title-wrap { padding: 28px 20px 20px; }
+    .page-title  { font-size: 22px; }
+    main { padding: 24px 20px 60px; }
+    footer { padding: 20px; flex-direction: column; gap: 8px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <a href="https://geonworks.cafe24.com/skin-skin3" class="logo">
+    <svg width="20" height="20" viewBox="0 0 596 842" fill="#111" xmlns="http://www.w3.org/2000/svg" fill-rule="evenodd" clip-rule="evenodd">
+      <g transform="translate(-9.3635,-817.6605)">
+        <path d="M485.655,1233.52L412.764,1306.41L485.655,1306.41L485.655,1233.52Z"/>
+        <path d="M485.655,1091.31L270.556,1306.41L350.053,1385.9L350,1306.41L485.655,1170.75L485.655,1091.31Z"/>
+        <path d="M485.655,1379.3L412.764,1306.41L412.764,1385.96L350.053,1448.67L207.791,1306.41L485.655,1028.54L485.655,949.101L128.348,1306.41L350.053,1528.11L485.655,1379.3Z"/>
+      </g>
+    </svg>
+    <span class="logo-text">GEONWORKS</span>
+  </a>
+  <div class="header-right">
+    <div class="header-nav">SKU 업데이트 내역</div>
+    <div class="conn-badge">
+      <div class="dot" id="dot"></div>
+      <span id="conn-text">연결 중...</span>
+    </div>
+  </div>
+</header>
+
+<div class="page-title-wrap">
+  <div class="page-label">ADMIN</div>
+  <h1 class="page-title">SKU 업데이트 내역</h1>
+  <p class="page-desc">신규 등록 및 수정 내역을 날짜별로 확인합니다.</p>
+</div>
+
+<main>
+  <div class="tab-row">
+    <button class="tab active" onclick="setTab('new', this)">신규</button>
+    <button class="tab" onclick="setTab('edit', this)">수정</button>
+  </div>
+  <div class="range-row">
+    <button class="range-btn active" onclick="setRange(7, this)">최근 7일</button>
+    <button class="range-btn" onclick="setRange(30, this)">최근 30일</button>
+    <button class="range-btn" onclick="setRange(0, this)">전체</button>
+    <span class="range-label" id="range-label"></span>
+  </div>
+  <div id="content"><div class="loading">로딩 중...</div></div>
+</main>
+
+<footer>
+  <div class="footer-logo">GEONWORKS</div>
+  <div class="footer-note">내부 관리용 페이지입니다.</div>
+</footer>
+
+<script>
+const SUPABASE_URL  = 'https://yqpskohzmnfiymjrgdxj.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxcHNrb2h6bW5maXltanJnZHhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MjQwMTgsImV4cCI6MjA5NDAwMDAxOH0.D75U1e8JMvVI0K2Ccq5DwOliPg_rt-2uvKse1V2fiqw';
+
+let currentTab = 'new', currentRange = 7, newData = [], editData = [];
+
+async function checkConn() {
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/products?select=id&limit=1`, {
+      headers: { 'apikey': SUPABASE_ANON, 'Authorization': `Bearer ${SUPABASE_ANON}` }
+    });
+    document.getElementById('dot').className        = 'dot ' + (r.ok ? 'ok' : 'err');
+    document.getElementById('conn-text').textContent = r.ok ? '연결됨' : '연결 실패';
+  } catch { document.getElementById('dot').className = 'dot err'; }
+}
+
+function setTab(tab, el) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  render();
+}
+
+function setRange(days, el) {
+  currentRange = days;
+  document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  loadData();
+}
+
+function getSinceDate(days) {
+  if (!days) return null;
+  const d = new Date();
+  d.setDate(d.getDate() - days + 1);
+  return d.toISOString().split('T')[0];
+}
+
+async function loadData() {
+  document.getElementById('content').innerHTML = '<div class="loading">로딩 중...</div>';
+  const since = getSinceDate(currentRange);
+  document.getElementById('range-label').textContent = currentRange === 0 ? '전체 기간' : `최근 ${currentRange}일`;
+
+  try {
+    let newUrl = `${SUPABASE_URL}/rest/v1/products?select=sku_code,category,brand,product_name,option,barcode,barcode_sub,created_at&order=created_at.desc&limit=1000`;
+    if (since) newUrl += `&created_at=gte.${since}`;
+    const newRes = await fetch(newUrl, { headers: { 'apikey': SUPABASE_ANON, 'Authorization': `Bearer ${SUPABASE_ANON}` } });
+    newData = newRes.ok ? await newRes.json() : [];
+
+    let editUrl = `${SUPABASE_URL}/rest/v1/product_changelog?select=sku_code,changed_at,changed_by,field_name,old_value,new_value&order=changed_at.desc&limit=2000`;
+    if (since) editUrl += `&changed_at=gte.${since}T00:00:00`;
+    const editRes = await fetch(editUrl, { headers: { 'apikey': SUPABASE_ANON, 'Authorization': `Bearer ${SUPABASE_ANON}` } });
+    const rawEdit = editRes.ok ? await editRes.json() : [];
+
+    const skuSet = [...new Set(rawEdit.map(r => r.sku_code))];
+    let nameMap = {};
+    if (skuSet.length > 0) {
+      const nr = await fetch(`${SUPABASE_URL}/rest/v1/products?select=sku_code,product_name,option&sku_code=in.(${skuSet.map(s => `"${s}"`).join(',')})`,
+        { headers: { 'apikey': SUPABASE_ANON, 'Authorization': `Bearer ${SUPABASE_ANON}` } });
+      if (nr.ok) (await nr.json()).forEach(p => { nameMap[p.sku_code] = p; });
+    }
+
+    const editGroups = {};
+    rawEdit.forEach(row => {
+      const key = `${row.sku_code}__${row.changed_at}`;
+      if (!editGroups[key]) editGroups[key] = { sku_code: row.sku_code, changed_at: row.changed_at, changed_by: row.changed_by, product: nameMap[row.sku_code] || null, fields: [] };
+      editGroups[key].fields.push({ field_name: row.field_name, old_value: row.old_value, new_value: row.new_value });
+    });
+    editData = Object.values(editGroups).sort((a, b) => new Date(b.changed_at) - new Date(a.changed_at));
+    render();
+  } catch(e) {
+    document.getElementById('content').innerHTML = `<div class="empty">데이터 로드 실패: ${e.message}</div>`;
+  }
+}
+
+function fmtDate(str) {
+  const d = new Date(str);
+  return `${d.getFullYear()}. ${String(d.getMonth()+1).padStart(2,'0')}. ${String(d.getDate()).padStart(2,'0')}`;
+}
+function fmtDateTime(str) {
+  const d = new Date(str);
+  return `${fmtDate(str)}  ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+function renderNew() {
+  if (!newData.length) return '<div class="empty">해당 기간에 신규 등록된 품목이 없습니다.</div>';
+  const groups = {};
+  newData.forEach(p => {
+    const date = p.created_at ? String(p.created_at).substring(0,10) : '날짜 없음';
+    if (!groups[date]) groups[date] = [];
+    groups[date].push(p);
+  });
+  return Object.entries(groups).sort((a,b) => b[0].localeCompare(a[0])).map(([date, items]) => `
+    <div class="date-group">
+      <div class="date-header">
+        <span class="date-label">${fmtDate(date)}</span>
+        <span class="badge badge-new">신규</span>
+        <span class="date-count">${items.length}건</span>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>SKU</th><th>카테고리</th><th>브랜드</th><th>품목명</th><th>옵션</th><th>바코드</th><th>보조바코드</th></tr></thead>
+          <tbody>${items.map(p => `
+            <tr>
+              <td class="td-sku">${p.sku_code||'-'}</td>
+              <td class="td-cat">${p.category||'-'}</td>
+              <td class="td-brand">${p.brand||'-'}</td>
+              <td class="td-name">${p.product_name||'-'}</td>
+              <td class="td-opt">${p.option||'-'}</td>
+              <td class="td-sku">${p.barcode||'-'}</td>
+              <td class="td-sku">${p.barcode_sub||'-'}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`).join('');
+}
+
+function renderEdit() {
+  if (!editData.length) return '<div class="empty">해당 기간에 수정된 항목이 없습니다.</div>';
+  const groups = {};
+  editData.forEach(e => {
+    const date = String(e.changed_at).substring(0,10);
+    if (!groups[date]) groups[date] = [];
+    groups[date].push(e);
+  });
+  const fl = { product_name:'품목명', option:'옵션', price:'가격', location_code:'위치코드', barcode:'바코드', barcode_sub:'보조바코드', naver_product_name:'네이버 판매명', naver_option_name:'네이버 옵션명', naver_url:'네이버 URL', shopify_url:'쇼피파이 URL', notes:'특이사항', is_active:'판매여부' };
+  return Object.entries(groups).sort((a,b) => b[0].localeCompare(a[0])).map(([date, entries]) => `
+    <div class="date-group">
+      <div class="date-header">
+        <span class="date-label">${fmtDate(date)}</span>
+        <span class="badge badge-edit">수정</span>
+        <span class="date-count">${entries.length}건</span>
+      </div>
+      ${entries.map(entry => `
+        <div class="log-item">
+          <div class="log-header">
+            <span class="log-sku">${entry.sku_code}</span>
+            ${entry.product ? `<span class="log-name">${entry.product.product_name}${entry.product.option?' / '+entry.product.option:''}</span>` : ''}
+            <span class="log-by">${entry.changed_by||'-'}</span>
+            <span class="log-time">${fmtDateTime(entry.changed_at)}</span>
+          </div>
+          <div class="log-fields">
+            ${entry.fields.map(f => `
+              <div class="log-field">
+                <span class="log-field-name">${fl[f.field_name]||f.field_name}</span>
+                <div class="log-values">
+                  <span class="${f.old_value?'log-old':'log-empty'}">${f.old_value||'(없음)'}</span>
+                  <span class="log-arrow">→</span>
+                  <span class="${f.new_value?'log-new':'log-empty'}">${f.new_value||'(없음)'}</span>
+                </div>
+              </div>`).join('')}
+          </div>
+        </div>`).join('')}
+    </div>`).join('');
+}
+
+function render() {
+  document.getElementById('content').innerHTML = currentTab === 'new' ? renderNew() : renderEdit();
+}
+
+checkConn();
+loadData();
+</script>
+</body>
+</html>
