@@ -400,14 +400,21 @@ async function sendAll() {
 
   // 여러 품목을 하나의 텍스트 블록으로 합치기
   const itemsText = requestList.map((item, i) => [
-    "─────────────────────────",
-    `[${i+1}] ${item.category} / ${item.product_name} / ${item.option}`,
-    `브랜드: ${item.brand}  가격: ${item.price}  바코드: ${item.barcode}`,
-    `보조바코드: ${item.barcode2}  위치코드: ${item.location_code}`,
-    `네이버 판매명: ${item.naver_name}  옵션명: ${item.naver_option}`,
+    `[${i+1}]`,
+    `카테고리: ${item.category}`,
+    `품목명: ${item.product_name}`,
+    `옵션: ${item.option}`,
+    `브랜드: ${item.brand}`,
+    `가격: ${item.price}`,
+    `바코드: ${item.barcode}`,
+    `보조바코드: ${item.barcode2}`,
+    `위치코드: ${item.location_code}`,
+    `네이버 판매명: ${item.naver_name}`,
+    `네이버 옵션명: ${item.naver_option}`,
     `네이버 URL: ${item.naver_url}`,
     `쇼피파이 URL: ${item.shopify_url}`,
     item.notes !== "-" ? `특이사항: ${item.notes}` : "",
+    "--------------------------",
   ].filter(Boolean).join("\n")).join("\n");
 
   try {
