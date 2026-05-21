@@ -355,7 +355,7 @@
     display: flex; align-items: center; justify-content: center;
   }
   .page-btn:hover { border-color: var(--accent); color: var(--accent); }
-  .page-btn.on { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 700; }
+  .page-btn.on { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 700; }
   .page-btn:disabled { opacity: .3; cursor: default; }
 
   /* ── DETAIL MODAL ── */
@@ -511,131 +511,7 @@
   }
   .btn-request:hover { border-color: var(--accent); color: var(--accent); }
 
-  /* ── REQUEST MODAL ── */
-  .req-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,.75);
-    z-index: 300;
-    backdrop-filter: blur(4px);
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-  }
-  .req-overlay.open { display: flex; }
-
-  .req-modal {
-    background: var(--bg2);
-    border: 1px solid var(--border2);
-    border-radius: 10px;
-    width: 100%;
-    max-width: 520px;
-    max-height: 88vh;
-    overflow-y: auto;
-    padding: 28px;
-  }
-
-  .req-title {
-    font-family: var(--mono);
-    font-size: 14px;
-    font-weight: 700;
-    letter-spacing: .06em;
-    margin-bottom: 6px;
-  }
-
-  .req-desc {
-    font-size: 12px;
-    color: var(--text2);
-    margin-bottom: 20px;
-    line-height: 1.6;
-  }
-
-  .req-field {
-    margin-bottom: 14px;
-  }
-
-  .req-label {
-    display: block;
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: .08em;
-    color: var(--text3);
-    text-transform: uppercase;
-    margin-bottom: 6px;
-  }
-  .req-label .req-required { color: var(--red); margin-left: 3px; }
-
-  .req-input, .req-select, .req-textarea {
-    width: 100%;
-    background: var(--bg3);
-    border: 1px solid var(--border2);
-    border-radius: var(--r);
-    padding: 10px 12px;
-    color: var(--text);
-    font-family: var(--sans);
-    font-size: 13px;
-    outline: none;
-    transition: border-color .2s;
-  }
-  .req-input:focus, .req-select:focus, .req-textarea:focus { border-color: var(--accent); }
-  .req-input::placeholder, .req-textarea::placeholder { color: var(--text3); }
-  .req-select option { background: var(--bg3); }
-  .req-textarea { resize: vertical; min-height: 72px; }
-
-  .req-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-  }
-
-  .req-footer {
-    display: flex;
-    gap: 8px;
-    margin-top: 20px;
-    justify-content: flex-end;
-  }
-
-  .btn-req-cancel {
-    background: transparent;
-    border: 1px solid var(--border2);
-    border-radius: var(--r);
-    color: var(--text2);
-    font-family: var(--mono);
-    font-size: 12px;
-    font-weight: 700;
-    padding: 9px 18px;
-    cursor: pointer;
-    transition: all .15s;
-  }
-  .btn-req-cancel:hover { border-color: var(--red); color: var(--red); }
-
-  .btn-req-submit {
-    background: var(--accent);
-    border: none;
-    border-radius: var(--r);
-    color: #000;
-    font-family: var(--mono);
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: .05em;
-    padding: 9px 20px;
-    cursor: pointer;
-    transition: background .15s;
-  }
-  .btn-req-submit:hover { background: var(--accent2); }
-  .btn-req-submit:disabled { opacity: .5; cursor: default; }
-
-  .req-status {
-    margin-top: 12px;
-    font-size: 12px;
-    text-align: center;
-    min-height: 18px;
-  }
-  .req-status.ok { color: #4caf50; }
-  .req-status.err { color: var(--red); }
-
-  /* ── SCROLLBAR ── */
+    /* ── SCROLLBAR ── */
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
@@ -650,7 +526,6 @@
   }
 </style>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
 <body>
 
@@ -666,7 +541,7 @@
   <div class="logo">GEON<span>.</span>search</div>
   <div style="display:flex;align-items:center;gap:12px;">
     <a href="updates.html" class="btn-request" style="text-decoration:none;">SKU 업데이트 내역</a>
-    <button class="btn-request" id="btn-request" style="display:none" onclick="openReqModal()">+ 신규 추가 요청</button>
+    <button class="btn-request" id="btn-request" style="display:none" onclick="openAddRequest()">+ 신규 추가 요청</button>
     <div class="conn-badge">
       <div class="dot" id="dot"></div>
       <span id="conn-text">연결 중...</span>
@@ -732,108 +607,6 @@
     <div class="modal-img" id="m-img"></div>
     <div class="modal-grid" id="m-grid"></div>
     <div class="modal-links" id="m-links"></div>
-  </div>
-</div>
-
-<!-- 신규 추가 요청 모달 -->
-<div class="req-overlay" id="req-overlay" onclick="closeReqModal(event)">
-  <div class="req-modal">
-    <div class="req-title">신규 품목 추가 요청</div>
-    <div class="req-desc">입력한 내용이 관리자 이메일로 전송됩니다.<br>관리자가 확인 후 DB에 추가해드려요.</div>
-
-    <div class="req-field">
-      <label class="req-label">카테고리 <span class="req-required">*</span></label>
-      <select class="req-select" id="req-cat">
-        <option value="">선택하세요</option>
-        <option value="housing">housing</option>
-        <option value="pcb">pcb</option>
-        <option value="plate">plate</option>
-        <option value="switch">switch</option>
-        <option value="stabilizer">stabilizer</option>
-        <option value="keycap">keycap</option>
-        <option value="foam">foam</option>
-        <option value="lubricant">lubricant</option>
-        <option value="cable">cable</option>
-        <option value="deskmat">deskmat</option>
-        <option value="bag">bag</option>
-        <option value="bumpon">bumpon</option>
-        <option value="tool">tool</option>
-        <option value="wooting">wooting</option>
-        <option value="ec">ec</option>
-        <option value="keyboard">keyboard</option>
-        <option value="etc">etc</option>
-      </select>
-    </div>
-
-    <div class="req-field">
-      <label class="req-label">품목명 <span class="req-required">*</span></label>
-      <input type="text" class="req-input" id="req-name" placeholder="예: Geon Bumpon" />
-    </div>
-
-    <div class="req-row">
-      <div class="req-field">
-        <label class="req-label">옵션</label>
-        <input type="text" class="req-input" id="req-opt" placeholder="없으면 비워두세요 (N/A 처리)" />
-      </div>
-      <div class="req-field">
-        <label class="req-label">브랜드</label>
-        <input type="text" class="req-input" id="req-brand" placeholder="예: Geonworks" />
-      </div>
-    </div>
-
-    <div class="req-row">
-      <div class="req-field">
-        <label class="req-label">가격</label>
-        <input type="text" class="req-input" id="req-price" placeholder="숫자만 (예: 35000)" />
-      </div>
-      <div class="req-field">
-        <label class="req-label">바코드</label>
-        <input type="text" class="req-input" id="req-barcode" placeholder="없으면 비워두세요" />
-      </div>
-    </div>
-
-    <div class="req-row">
-      <div class="req-field">
-        <label class="req-label">위치코드</label>
-        <input type="text" class="req-input" id="req-loc" placeholder="예: A-1" />
-      </div>
-      <div class="req-field">
-        <label class="req-label">보조바코드</label>
-        <input type="text" class="req-input" id="req-barcode2" placeholder="없으면 비워두세요" />
-      </div>
-    </div>
-
-    <div class="req-field">
-      <label class="req-label">네이버 판매명</label>
-      <input type="text" class="req-input" id="req-nname" placeholder="네이버 스토어 상품명" />
-    </div>
-
-    <div class="req-field">
-      <label class="req-label">네이버 옵션명</label>
-      <input type="text" class="req-input" id="req-nopt" placeholder="네이버 스토어 옵션명" />
-    </div>
-
-    <div class="req-row">
-      <div class="req-field">
-        <label class="req-label">네이버 URL</label>
-        <input type="text" class="req-input" id="req-nurl" placeholder="https://..." />
-      </div>
-      <div class="req-field">
-        <label class="req-label">쇼피파이 URL</label>
-        <input type="text" class="req-input" id="req-surl" placeholder="https://..." />
-      </div>
-    </div>
-
-    <div class="req-field">
-      <label class="req-label">특이사항</label>
-      <textarea class="req-textarea" id="req-notes" placeholder="추가로 전달할 내용이 있으면 적어주세요"></textarea>
-    </div>
-
-    <div class="req-footer">
-      <button class="btn-req-cancel" onclick="closeReqModalBtn()">취소</button>
-      <button class="btn-req-submit" id="btn-req-submit" onclick="submitRequest()">전송</button>
-    </div>
-    <div class="req-status" id="req-status"></div>
   </div>
 </div>
 
@@ -1118,8 +891,13 @@ function esc(s) {
   return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// ── 신규 추가 요청 모달
-function openReqModal() {
+// ── 신규 추가 요청 새 창
+function openAddRequest() {
+  const email = sessionStorage.getItem('gw-auth') || '';
+  const url = 'add-request.html?from=admin&auth=' + encodeURIComponent(email);
+  window.open(url, '_blank', 'width=640,height=860,scrollbars=yes');
+}
+function openReqModal_unused() {
   document.getElementById('req-overlay').classList.add('open');
   document.body.style.overflow = 'hidden';
   document.getElementById('req-status').textContent = '';

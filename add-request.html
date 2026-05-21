@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>신규 추가 요청 · GEONWORKS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:      #ffffff;
+    --bg2:     #f8f8f8;
+    --bg3:     #f2f2f2;
+    --border:  #e8e8e8;
+    --border2: #d4d4d4;
+    --text:    #111111;
+    --text2:   #555555;
+    --text3:   #999999;
+    --accent:  #111111;
+    --err:     #c0392b;
+    --ok:      #2d7a4f;
+    --r: 2px;
+    --font: 'Noto Sans KR', 'Pretendard', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; line-height: 1.6; min-height: 100vh; }
+
+  /* LOCK SCREEN */
+  #lock-screen {
+    display: flex; position: fixed; inset: 0;
+    background: #ffffff; z-index: 999;
+    flex-direction: column; align-items: center; justify-content: center;
+    gap: 20px; padding: 40px;
+  }
+  .lock-logo { font-size: 18px; font-weight: 700; letter-spacing: .12em; color: var(--text); }
+  .lock-logo span { color: var(--text3); }
+  .lock-desc { font-size: 13px; color: var(--text2); text-align: center; line-height: 1.6; }
+  #lock-error { font-size: 12px; color: var(--err); min-height: 18px; text-align: center; }
+
+  /* HEADER */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px; height: 56px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .logo { font-size: 13px; font-weight: 700; letter-spacing: .12em; color: var(--text); }
+  .logo span { color: var(--text3); }
+  .user-info { font-size: 11px; color: var(--text3); }
+
+  /* MAIN */
+  main { max-width: 600px; margin: 0 auto; padding: 36px 24px 80px; }
+
+  .page-label { font-size: 11px; letter-spacing: .15em; color: var(--text3); text-transform: uppercase; margin-bottom: 8px; }
+  .page-title { font-size: 22px; font-weight: 300; margin-bottom: 6px; }
+  .page-desc  { font-size: 13px; color: var(--text2); margin-bottom: 32px; line-height: 1.7; }
+
+  /* FORM */
+  .field { margin-bottom: 16px; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+
+  label {
+    display: block;
+    font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--text3); margin-bottom: 6px;
+  }
+  .required { color: var(--err); margin-left: 2px; }
+
+  input[type=text], select, textarea {
+    width: 100%;
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: var(--r);
+    padding: 10px 12px;
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 13px;
+    outline: none;
+    transition: border-color .2s;
+  }
+  input[type=text]:focus, select:focus, textarea:focus { border-color: var(--accent); background: var(--bg); }
+  input::placeholder, textarea::placeholder { color: var(--text3); }
+  select option { background: var(--bg); }
+  textarea { resize: vertical; min-height: 80px; }
+
+  .divider {
+    border: none; border-top: 1px solid var(--border);
+    margin: 24px 0 20px;
+  }
+  .section-label {
+    font-size: 10px; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--text3); margin-bottom: 14px;
+  }
+
+  /* FOOTER */
+  .form-footer {
+    display: flex; gap: 8px; justify-content: flex-end; margin-top: 28px;
+  }
+  .btn-cancel {
+    background: transparent; border: 1px solid var(--border2);
+    border-radius: var(--r); color: var(--text2);
+    font-family: var(--font); font-size: 12px; font-weight: 500;
+    padding: 10px 20px; cursor: pointer; transition: all .15s;
+  }
+  .btn-cancel:hover { border-color: var(--err); color: var(--err); }
+
+  .btn-submit {
+    background: var(--accent); border: none;
+    border-radius: var(--r); color: #fff;
+    font-family: var(--font); font-size: 12px; font-weight: 700;
+    letter-spacing: .04em; padding: 10px 24px; cursor: pointer; transition: background .15s;
+  }
+  .btn-submit:hover { background: #333; }
+  .btn-submit:disabled { opacity: .5; cursor: default; }
+
+  .status {
+    text-align: center; font-size: 13px; min-height: 20px; margin-top: 16px;
+  }
+  .status.ok  { color: var(--ok); }
+  .status.err { color: var(--err); }
+</style>
+</head>
+<body>
+
+<!-- 잠금 화면 (직접 접근 시만 표시) -->
+<div id="lock-screen">
+  <div class="lock-logo">GEON<span>.</span>works</div>
+  <div class="lock-desc">@geon.works 계정으로 로그인하여<br>신규 추가 요청을 제출하세요.</div>
+  <div id="g-signin-btn"></div>
+  <div id="lock-error"></div>
+</div>
+
+<header>
+  <div class="logo">GEON<span>.</span>request</div>
+  <div class="user-info" id="user-info"></div>
+</header>
+
+<main>
+  <div class="page-label">ADMIN</div>
+  <h1 class="page-title">신규 품목 추가 요청</h1>
+  <p class="page-desc">입력한 내용이 관리자 이메일로 전송됩니다.<br>관리자가 확인 후 DB에 추가해드려요.</p>
+
+  <!-- 기본 정보 -->
+  <div class="field">
+    <label>카테고리 <span class="required">*</span></label>
+    <select id="req-cat">
+      <option value="">선택하세요</option>
+      <option value="housing">housing</option>
+      <option value="pcb">pcb</option>
+      <option value="plate">plate</option>
+      <option value="switch">switch</option>
+      <option value="stabilizer">stabilizer</option>
+      <option value="keycap">keycap</option>
+      <option value="foam">foam</option>
+      <option value="lubricant">lubricant</option>
+      <option value="cable">cable</option>
+      <option value="deskmat">deskmat</option>
+      <option value="bag">bag</option>
+      <option value="bumpon">bumpon</option>
+      <option value="tool">tool</option>
+      <option value="wooting">wooting</option>
+      <option value="ec">ec</option>
+      <option value="keyboard">keyboard</option>
+      <option value="etc">etc</option>
+    </select>
+  </div>
+
+  <div class="field">
+    <label>품목명 <span class="required">*</span></label>
+    <input type="text" id="req-name" placeholder="예: Geon Bumpon"/>
+  </div>
+
+  <div class="field-row">
+    <div>
+      <label>옵션</label>
+      <input type="text" id="req-opt" placeholder="없으면 비워두세요 (N/A)"/>
+    </div>
+    <div>
+      <label>브랜드</label>
+      <input type="text" id="req-brand" placeholder="예: Geonworks"/>
+    </div>
+  </div>
+
+  <div class="field-row">
+    <div>
+      <label>가격</label>
+      <input type="text" id="req-price" placeholder="숫자만 (예: 35000)"/>
+    </div>
+    <div>
+      <label>바코드</label>
+      <input type="text" id="req-barcode" placeholder="없으면 비워두세요"/>
+    </div>
+  </div>
+
+  <div class="field-row">
+    <div>
+      <label>위치코드</label>
+      <input type="text" id="req-loc" placeholder="예: A-1"/>
+    </div>
+    <div>
+      <label>보조바코드</label>
+      <input type="text" id="req-barcode2" placeholder="없으면 비워두세요"/>
+    </div>
+  </div>
+
+  <hr class="divider"/>
+  <div class="section-label">네이버 스토어</div>
+
+  <div class="field">
+    <label>네이버 판매명</label>
+    <input type="text" id="req-nname" placeholder="네이버 스토어 상품명"/>
+  </div>
+  <div class="field">
+    <label>네이버 옵션명</label>
+    <input type="text" id="req-nopt" placeholder="네이버 스토어 옵션명"/>
+  </div>
+  <div class="field-row">
+    <div>
+      <label>네이버 URL</label>
+      <input type="text" id="req-nurl" placeholder="https://..."/>
+    </div>
+    <div>
+      <label>쇼피파이 URL</label>
+      <input type="text" id="req-surl" placeholder="https://..."/>
+    </div>
+  </div>
+
+  <hr class="divider"/>
+
+  <div class="field">
+    <label>특이사항</label>
+    <textarea id="req-notes" placeholder="추가로 전달할 내용이 있으면 적어주세요"></textarea>
+  </div>
+
+  <div class="form-footer">
+    <button class="btn-cancel" onclick="window.close()">닫기</button>
+    <button class="btn-submit" id="btn-submit" onclick="submitRequest()">전송</button>
+  </div>
+  <div class="status" id="status"></div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+const ALLOWED_DOMAIN   = 'geon.works';
+const CLIENT_ID        = '666157816733-0uu1dkoda0ljjslrd479j371snkj62t7.apps.googleusercontent.com';
+const EMAILJS_SERVICE  = 'service_wirge1i';
+const EMAILJS_TEMPLATE = 'template_rorxov8';
+const EMAILJS_KEY      = 'HYv_Nu3sxLBNi0Yd5';
+
+let userEmail = '';
+
+// ── 인증 처리
+function init() {
+  // gw-admin에서 파라미터로 넘어온 경우
+  const params = new URLSearchParams(window.location.search);
+  const fromAdmin = params.get('from') === 'admin';
+  const authEmail = decodeURIComponent(params.get('auth') || '');
+
+  if (fromAdmin && authEmail && authEmail.endsWith('@' + ALLOWED_DOMAIN)) {
+    // gw-admin 통해 접근 → 바로 통과
+    userEmail = authEmail;
+    showApp();
+    return;
+  }
+
+  // sessionStorage 확인 (이 창에서 이미 로그인한 경우)
+  const saved = sessionStorage.getItem('req-auth');
+  if (saved && saved.endsWith('@' + ALLOWED_DOMAIN)) {
+    userEmail = saved;
+    showApp();
+    return;
+  }
+
+  // 직접 접근 → Google OAuth
+  google.accounts.id.initialize({
+    client_id: CLIENT_ID,
+    callback: handleCredentialResponse,
+    auto_select: false,
+  });
+  google.accounts.id.renderButton(
+    document.getElementById('g-signin-btn'),
+    { type: 'standard', theme: 'outline', size: 'large', text: 'signin_with', locale: 'ko' }
+  );
+  google.accounts.id.prompt();
+}
+
+function handleCredentialResponse(response) {
+  const payload = parseJwt(response.credential);
+  const email = payload.email || '';
+  const domain = email.split('@')[1] || '';
+  if (domain === ALLOWED_DOMAIN) {
+    userEmail = email;
+    sessionStorage.setItem('req-auth', email);
+    showApp();
+  } else {
+    document.getElementById('lock-error').textContent =
+      `@${ALLOWED_DOMAIN} 계정만 사용할 수 있어요 (현재: ${email})`;
+    google.accounts.id.revoke(email, () => {});
+  }
+}
+
+function parseJwt(token) {
+  try {
+    return JSON.parse(atob(token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+  } catch { return {}; }
+}
+
+function showApp() {
+  document.getElementById('lock-screen').style.display = 'none';
+  document.getElementById('user-info').textContent = userEmail;
+}
+
+// ── 전송
+async function submitRequest() {
+  const cat  = document.getElementById('req-cat').value.trim();
+  const name = document.getElementById('req-name').value.trim();
+  if (!cat)  { setStatus('카테고리를 선택해주세요.', false); return; }
+  if (!name) { setStatus('품목명을 입력해주세요.', false); return; }
+
+  const opt      = document.getElementById('req-opt').value.trim() || 'N/A';
+  const brand    = document.getElementById('req-brand').value.trim() || '-';
+  const price    = document.getElementById('req-price').value.trim() || '-';
+  const barcode  = document.getElementById('req-barcode').value.trim() || '-';
+  const barcode2 = document.getElementById('req-barcode2').value.trim() || '-';
+  const loc      = document.getElementById('req-loc').value.trim() || '-';
+  const nname    = document.getElementById('req-nname').value.trim() || '-';
+  const nopt     = document.getElementById('req-nopt').value.trim() || '-';
+  const nurl     = document.getElementById('req-nurl').value.trim() || '-';
+  const surl     = document.getElementById('req-surl').value.trim() || '-';
+  const notes    = document.getElementById('req-notes').value.trim() || '-';
+
+  const btn = document.getElementById('btn-submit');
+  btn.disabled = true;
+  btn.textContent = '전송 중...';
+  setStatus('', false);
+
+  try {
+    await emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE, {
+      requester:     userEmail,
+      request_time:  new Date().toLocaleString('ko-KR'),
+      category:      cat,
+      product_name:  name,
+      option:        opt,
+      brand, price, barcode, barcode2,
+      location_code: loc,
+      naver_name:    nname,
+      naver_option:  nopt,
+      naver_url:     nurl,
+      shopify_url:   surl,
+      notes,
+    }, EMAILJS_KEY);
+
+    setStatus('✓ 전송 완료! 관리자가 확인 후 추가해드릴게요.', true);
+    ['req-cat','req-name','req-opt','req-brand','req-price','req-barcode',
+     'req-barcode2','req-loc','req-nname','req-nopt','req-nurl','req-surl','req-notes']
+      .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  } catch(e) {
+    setStatus(`전송 실패: ${JSON.stringify(e)}`, false);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '전송';
+  }
+}
+
+function setStatus(msg, ok) {
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  el.className = 'status' + (msg ? (ok ? ' ok' : ' err') : '');
+}
+
+// Google SDK 로드 후 init 호출
+window.addEventListener('load', () => {
+  if (typeof google !== 'undefined') { init(); }
+  else {
+    const s = document.querySelector('script[src*="gsi/client"]');
+    if (s) s.addEventListener('load', init);
+    else setTimeout(init, 1000);
+  }
+});
+</script>
+</body>
+</html>

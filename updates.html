@@ -104,7 +104,7 @@
   td { padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
   tr:last-child td { border-bottom: none; }
   tr:hover td { background: var(--bg2); }
-  .td-sku   { font-size: 11px; color: var(--text3); white-space: nowrap; font-family: monospace; }
+  .td-sku   { font-size: 11px; color: var(--text3); white-space: nowrap; }
   .td-cat   { font-size: 10px; text-transform: uppercase; color: var(--text3); letter-spacing: .06em; }
   .td-name  { font-weight: 500; }
   .td-opt   { color: var(--text2); font-size: 13px; }
@@ -114,9 +114,9 @@
   .log-item { border: 1px solid var(--border); border-radius: var(--r); padding: 14px 16px; margin-bottom: 8px; background: var(--bg); transition: background .15s; }
   .log-item:hover { background: var(--bg2); }
   .log-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
-  .log-sku  { font-size: 12px; font-weight: 700; font-family: monospace; }
+  .log-sku  { font-size: 12px; font-weight: 700; }
   .log-name { font-size: 12px; color: var(--text2); }
-  .log-time { font-size: 10px; color: var(--text3); margin-left: auto; white-space: nowrap; font-family: monospace; }
+  .log-time { font-size: 10px; color: var(--text3); margin-left: auto; white-space: nowrap; }
   .log-by   { font-size: 10px; color: var(--text3); }
   .log-fields { display: flex; flex-direction: column; gap: 6px; }
   .log-field  { display: flex; align-items: flex-start; gap: 10px; font-size: 12px; flex-wrap: wrap; }
@@ -198,7 +198,7 @@
 
 <script>
 const SUPABASE_URL  = 'https://yqpskohzmnfiymjrgdxj.supabase.co';
-const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxcHNrb2h6bW5maXltanJnZHhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MjQwMTgsImV4cCI6MjA5NDAwMDAxOH0.D75U1e8JMvVI0K2Ccq5DwOliPg_rt-2uvKse1V2fiqw';
+const SUPABASE_ANON = 'ANON_KEY_HERE';
 
 let currentTab = 'new', currentRange = 7, newData = [], editData = [];
 
