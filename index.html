@@ -21,17 +21,17 @@
 </style>
 <style>
   :root {
-    --bg: #0d0d0d;
-    --bg2: #141414;
-    --bg3: #1e1e1e;
-    --border: #252525;
-    --border2: #303030;
-    --text: #f0f0f0;
-    --text2: #aaaaaa;
-    --text3: #606060;
-    --accent: #f0f0f0;
-    --accent2: #cccccc;
-    --red: #ff4444;
+    --bg: #ffffff;
+    --bg2: #f8f8f8;
+    --bg3: #f2f2f2;
+    --border: #e8e8e8;
+    --border2: #d4d4d4;
+    --text: #111111;
+    --text2: #555555;
+    --text3: #999999;
+    --accent: #111111;
+    --accent2: #333333;
+    --red: #c0392b;
     --mono: 'GmarketSans', 'Pretendard', sans-serif;
     --sans: 'Pretendard', 'Noto Sans KR', sans-serif;
     --r: 4px;
@@ -655,16 +655,17 @@
 <body>
 
 <!-- 잠금 화면 -->
-<div id="lock-screen" style="display:flex;position:fixed;inset:0;background:#0d0d0d;z-index:999;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:40px;">
-  <div style="font-family:'GmarketSans',sans-serif;font-size:22px;font-weight:700;letter-spacing:.12em;color:#f0f0f0;">GEON<span style="color:#f0f0f0;">.</span>search</div>
-  <div style="font-family:'Pretendard',sans-serif;font-size:13px;color:#666;text-align:center;line-height:1.6;">GEONWORKS 계정으로 로그인하세요<br>(@geon.works)</div>
+<div id="lock-screen" style="display:flex;position:fixed;inset:0;background:#ffffff;z-index:999;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:40px;">
+  <div style="font-family:'GmarketSans',sans-serif;font-size:22px;font-weight:700;letter-spacing:.12em;color:#111111;">GEON<span style="color:#999999;">.</span>search</div>
+  <div style="font-family:'Pretendard',sans-serif;font-size:13px;color:#555555;text-align:center;line-height:1.6;">GEONWORKS 계정으로 로그인하세요<br>(@geon.works)</div>
   <div id="g-signin-btn"></div>
-  <div id="lock-error" style="font-family:'Pretendard',sans-serif;font-size:12px;color:#ff4444;min-height:18px;text-align:center;"></div>
+  <div id="lock-error" style="font-family:'Pretendard',sans-serif;font-size:12px;color:#c0392b;min-height:18px;text-align:center;"></div>
 </div>
 
 <header>
   <div class="logo">GEON<span>.</span>search</div>
   <div style="display:flex;align-items:center;gap:12px;">
+    <a href="updates.html" class="btn-request" style="text-decoration:none;">SKU 업데이트 내역</a>
     <button class="btn-request" id="btn-request" style="display:none" onclick="openReqModal()">+ 신규 추가 요청</button>
     <div class="conn-badge">
       <div class="dot" id="dot"></div>
