@@ -839,7 +839,14 @@ function openModal(idx) {
     { label: '브랜드',          val: p.brand,               cls: '' },
     { label: '바코드',          val: p.barcode,             cls: 'mono' },
     { label: '보조 바코드',     val: p.barcode_sub,         cls: 'mono' },
-    { label: '재고',            val: p.stock !== null && p.stock !== undefined ? p.stock + 'EA' : null, cls: 'mono' },
+    { label: '재고', val: p.stock != null ? (() => {
+    const qty = String(p.stock) + ' EA';
+    if (!p.stock_updated_at) return qty;
+    const d = new Date(p.stock_updated_at);
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    return `${qty} · ${hh}:${mm} 업데이트`;
+  })() : null, cls: 'mono' },
     { label: '위치 코드',       val: p.location_code,       cls: 'mono' },
     { label: '가격',            val: p.price ? '₩' + Number(p.price).toLocaleString() : null, cls: 'price' },
     { label: '네이버 제품명',   val: p.naver_product_name,  cls: '', full: true },
