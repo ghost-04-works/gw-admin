@@ -840,31 +840,29 @@ function openModal(idx) {
     { label: '바코드',          val: p.barcode,             cls: 'mono' },
     { label: '보조 바코드',     val: p.barcode_sub,         cls: 'mono' },
     { label: '재고 (셀메이트)', val: p.stock != null ? (() => {
-      const isZero = p.stock === 0;
-      const qty = isZero ? '재고 없음' : `${Number(p.stock).toLocaleString()} EA`;
-      const url = p.barcode
-        ? `https://geon.sellmate.co.kr/stock/stock_list_new.asp?Search_How=bcode_no&Search_Key=${encodeURIComponent(p.barcode)}&first_in_check=off`
-        : null;
-      let time = '';
-      if (p.stock_updated_at) {
-        const d = new Date(p.stock_updated_at);
-        const hh = String(d.getHours()).padStart(2,'0');
-        const mm = String(d.getMinutes()).padStart(2,'0');
-        const yyyy = d.getFullYear();
-        const mo = String(d.getMonth()+1).padStart(2,'0');
-        const dd = String(d.getDate()).padStart(2,'0');
-        time = ` | ${hh}:${mm} · ${yyyy}-${mo}-${dd}`;
-      }
-      const text = qty + time;
-      const borderColor = isZero ? 'rgba(255,80,80,0.5)' : 'rgba(37,99,235,0.6)';
-      const bgColor = isZero ? 'rgba(255,80,80,0.06)' : 'rgba(37,99,235,0.08)';
-      const textColor = isZero ? 'var(--red)' : 'var(--accent)';
-      const arrowColor = isZero ? 'var(--red)' : '#60a5fa';
-      if (url) {
-        return `<a href="${url}" target="_blank" rel="noopener" style="display:block;text-decoration:none;margin:-8px;padding:8px;border-radius:6px;border:1px solid ${borderColor};background:${bgColor};color:${textColor};">${text} <span style="float:right;color:${arrowColor};">↗</span></a>`;
-      }
-      return `<span style="color:${textColor};">${text}</span>`;
-    })() : null, cls: 'mono' },
+        const isZero = p.stock === 0;
+        const qty = isZero ? '재고 없음' : `${Number(p.stock).toLocaleString()} EA`;
+        const url = p.barcode
+          ? `https://geon.sellmate.co.kr/stock/stock_list_new.asp?Search_How=bcode_no&Search_Key=${encodeURIComponent(p.barcode)}&first_in_check=off`
+          : null;
+        let time = '';
+        if (p.stock_updated_at) {
+          const d = new Date(p.stock_updated_at);
+          const hh = String(d.getHours()).padStart(2,'0');
+          const mm = String(d.getMinutes()).padStart(2,'0');
+          const yyyy = d.getFullYear();
+          const mo = String(d.getMonth()+1).padStart(2,'0');
+          const dd = String(d.getDate()).padStart(2,'0');
+          time = ` | ${hh}:${mm} · ${yyyy}-${mo}-${dd}`;
+        }
+        return url ? `<a href="${url}">` + qty + time + `</a>` : qty + time;
+      })() : null,
+      cls: 'mono', raw: true,
+      borderColor: p.stock === 0 ? 'rgba(255,80,80,0.5)' : 'rgba(37,99,235,0.6)',
+      bgColor: p.stock === 0 ? 'rgba(255,80,80,0.06)' : 'rgba(37,99,235,0.08)',
+      textColor: p.stock === 0 ? 'var(--red)' : 'var(--accent)',
+      arrowColor: '#60a5fa',
+    },
     { label: '위치 코드',       val: p.location_code,       cls: 'mono' },
     { label: '가격',            val: p.price ? '₩' + Number(p.price).toLocaleString() : null, cls: 'price' },
     { label: '네이버 제품명',   val: p.naver_product_name,  cls: '', full: true },
@@ -875,10 +873,23 @@ function openModal(idx) {
 
   const gridHTML = fields
     .filter(f => f.val)
-    .map(f => `<div class="modal-field${f.full ? ' full' : ''}">
-      <div class="mf-label">${f.label}</div>
-      <div class="mf-val ${f.cls}">${esc(f.val)}</div>
-    </div>`).join('');
+    .map(f => {
+      const isLink = f.raw && f.val && f.val.startsWith('<a ');
+      if (isLink) {
+        // 링크 필드는 카드 전체를 a 태그로
+        const hrefMatch = f.val.match(/href="([^"]+)"/);
+        const href = hrefMatch ? hrefMatch[1] : '#';
+        const innerText = f.val.replace(/<a[^>]*>|<\/a>/g, '').replace(/<span[^>]*>↗<\/span>/, '').trim();
+        return `<a class="modal-field${f.full ? ' full' : ''}" href="${href}" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;border-color:${f.borderColor||''};background:${f.bgColor||''};">
+          <div class="mf-label">${f.label} <span style="float:right;color:${f.arrowColor||'currentColor'};">↗</span></div>
+          <div class="mf-val ${f.cls}" style="color:${f.textColor||''}">${innerText}</div>
+        </a>`;
+      }
+      return `<div class="modal-field${f.full ? ' full' : ''}">
+        <div class="mf-label">${f.label}</div>
+        <div class="mf-val ${f.cls}">${f.raw ? f.val : esc(f.val)}</div>
+      </div>`;
+    }).join('');
 
   document.getElementById('m-grid').innerHTML = gridHTML;
 
