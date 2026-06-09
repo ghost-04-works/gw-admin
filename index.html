@@ -599,7 +599,10 @@
     <div class="modal-header">
       <div>
         <div class="modal-cat" id="m-cat"></div>
-        <div class="modal-name" id="m-name"></div>
+        <div class="modal-name" id="m-name" style="display:flex;align-items:baseline;gap:8px;">
+          <span id="m-name-text"></span>
+          <span id="m-origin" style="font-size:13px;font-weight:normal;opacity:0.85;white-space:nowrap;"></span>
+        </div>
         <div class="modal-opt" id="m-opt"></div>
       </div>
       <button class="modal-close" onclick="closeModalBtn()">✕</button>
@@ -821,7 +824,38 @@ function openModal(idx) {
   if (!p) return;
 
   document.getElementById('m-cat').textContent = p.category || '';
-  document.getElementById('m-name').textContent = p.product_name || '-';
+  document.getElementById('m-name-text').textContent = p.product_name || '-';
+
+  // 원산지 국기
+  const ORIGIN_FLAGS = {
+    KR: { flag: '🇰🇷', name: 'Republic of Korea' },
+    CN: { flag: '🇨🇳', name: 'China' },
+    DE: { flag: '🇩🇪', name: 'Germany' },
+    US: { flag: '🇺🇸', name: 'United States' },
+    JP: { flag: '🇯🇵', name: 'Japan' },
+    TW: { flag: '🇹🇼', name: 'Taiwan' },
+    GB: { flag: '🇬🇧', name: 'United Kingdom' },
+    FR: { flag: '🇫🇷', name: 'France' },
+    VN: { flag: '🇻🇳', name: 'Vietnam' },
+    TH: { flag: '🇹🇭', name: 'Thailand' },
+    MY: { flag: '🇲🇾', name: 'Malaysia' },
+    AU: { flag: '🇦🇺', name: 'Australia' },
+    NZ: { flag: '🇳🇿', name: 'New Zealand' },
+    IN: { flag: '🇮🇳', name: 'India' },
+    ID: { flag: '🇮🇩', name: 'Indonesia' },
+  };
+  const originEl = document.getElementById('m-origin');
+  if (originEl) {
+    const code = (p.origin_code || '').trim().toUpperCase();
+    if (code) {
+      const info = ORIGIN_FLAGS[code];
+      const flag = info ? info.flag : '🌐';
+      const name = info ? info.name : code;
+      originEl.textContent = `${flag} ${code} · ${name}`;
+    } else {
+      originEl.textContent = '';
+    }
+  }
   const opt = p.option && p.option.toUpperCase() !== 'N/A' ? p.option : '';
   document.getElementById('m-opt').textContent = opt;
 
