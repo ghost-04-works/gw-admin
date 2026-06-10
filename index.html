@@ -738,9 +738,9 @@ function renderTable() {
   const cols = [
     { key: 'sku_code',      label: 'SKU' },
     { key: 'category',      label: 'CATEGORY' },
-    { key: 'brand',         label: 'BRAND' },
     { key: 'product_name',  label: 'PRODUCT' },
     { key: 'option',        label: 'OPTION' },
+    { key: 'brand',         label: 'BRAND' },
     { key: 'barcode',       label: 'BARCODE' },
     { key: 'location_code', label: 'LOCATION' },
     { key: 'price',         label: 'PRICE' },
@@ -761,9 +761,9 @@ function renderTable() {
     return `<tr onclick="openModal(${start + i})">
       <td class="td-sku">${esc(p.sku_code || '')}</td>
       <td class="td-cat">${esc(p.category || '')}</td>
-      <td class="td-brand">${esc(brand)}</td>
       <td class="td-name">${esc(p.product_name || '')}</td>
       <td class="td-opt">${esc(opt)}</td>
+      <td class="td-brand">${esc(brand)}</td>
       <td class="td-barcode">${esc(barcode)}</td>
       <td class="td-loc">${esc(loc)}</td>
       <td class="td-price">${price}</td>
