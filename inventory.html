@@ -305,6 +305,46 @@
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
+  .btn-search {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--r);
+    padding: 0 18px;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: .05em;
+    white-space: nowrap;
+    height: 38px;
+    transition: background .15s;
+  }
+  .btn-search:hover { background: var(--accent2); }
+
+  .filter-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: .08em;
+    margin-right: 2px;
+    line-height: 28px;
+  }
+
+  .chip {
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border2);
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--text2);
+    cursor: pointer;
+    transition: all .15s;
+    background: transparent;
+  }
+  .chip:hover { border-color: var(--accent); color: var(--accent); }
+  .chip.on { border-color: var(--accent); color: #fff; background: var(--accent); }
+
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
@@ -331,11 +371,13 @@
   <div class="header-right">
     <div class="conn-badge">
       <div class="dot" id="dot-sellmate"></div>
-      <span id="label-sellmate">Sellmate</span>
+      <span>Sellmate</span>
+      <span id="time-sellmate" style="color:var(--text3);margin-left:2px;"></span>
     </div>
     <div class="conn-badge">
       <div class="dot" id="dot-shopify"></div>
-      <span id="label-shopify">Shopify</span>
+      <span>Shopify</span>
+      <span id="time-shopify" style="color:var(--text3);margin-left:2px;"></span>
     </div>
     <a href="index.html" class="btn-nav">← 제품 검색</a>
     <button class="btn-refresh" id="btn-refresh" onclick="loadAll()">↻ 새로고침</button>
@@ -345,9 +387,14 @@
 <div class="toolbar">
   <div class="search-input-wrap">
     <span class="search-icon">🔍</span>
-    <input type="text" id="search-input" placeholder="제품명 또는 옵션 검색..." oninput="renderTable()">
+    <input type="text" id="search-input" placeholder="제품명 또는 옵션 검색..."
+      onkeydown="if(event.key==='Enter') renderTable()">
   </div>
-  <div class="updated-at" id="updated-at"></div>
+  <button class="btn-search" onclick="renderTable()">검색</button>
+</div>
+<div class="filter-row" id="filter-row" style="padding: 10px 24px 0; max-width:1200px; margin:0 auto; display:flex; gap:6px; flex-wrap:wrap;">
+  <span class="filter-label">CATEGORY</span>
+  <button class="chip on" data-cat="all" onclick="selectCat(this)">전체</button>
 </div>
 
 <div class="stats-row" id="stats-row" style="display:none;">
@@ -392,9 +439,11 @@ const SUPABASE_URL = 'https://yqpskohzmnfiymjrgdxj.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxcHNrb2h6bW5maXltanJnZHhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MjQwMTgsImV4cCI6MjA5NDAwMDAxOH0.D75U1e8JMvVI0K2Ccq5DwOliPg_rt-2uvKse1V2fiqw';
 const GOOGLE_CLIENT_ID = '666157816733-0uu1dkoda0ljjslrd479j371snkj62t7.apps.googleusercontent.com';
 
-let sellmateData = [];   // [{barcode, product_name, option_name, stock}]
-let shopifyData  = [];   // [{product_title, variant_title, sku, inventory}]
-let mergedRows   = [];   // 최종 합산
+let sellmateData = [];
+let shopifyData  = [];
+let mergedRows   = [];
+let activeCat    = 'all';
+const CATEGORIES = ['switch','keycap','keyboard','stabilizer','plate','pcb','foam','deskmat','cable','bag','tool','lubricant','bumpon','other'];
 
 // ── Google OAuth ──
 window.onload = () => {
@@ -448,7 +497,7 @@ async function loadAll() {
   document.getElementById('table-container').style.display = 'block';
   document.getElementById('stats-row').style.display = 'flex';
   document.getElementById('btn-refresh').disabled = false;
-  document.getElementById('updated-at').textContent = '기준: ' + new Date().toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'});
+
   renderTable();
 }
 
@@ -459,7 +508,7 @@ async function loadSellmate() {
   const size = 1000;
   while (true) {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/products?select=barcode,product_name,option,stock&is_active=eq.true&order=product_name.asc,option.asc&limit=${size}&offset=${from}`,
+      `${SUPABASE_URL}/rest/v1/products?select=barcode,product_name,option,stock,stock_updated_at,category&is_active=eq.true&order=product_name.asc,option.asc&limit=${size}&offset=${from}`,
       { headers: { apikey: SUPABASE_ANON, Authorization: 'Bearer ' + SUPABASE_ANON } }
     );
     if (!res.ok) throw new Error('Sellmate fetch failed: ' + res.status);
@@ -469,6 +518,13 @@ async function loadSellmate() {
     from += size;
   }
   document.getElementById('stat-sellmate-count').textContent = all.length.toLocaleString();
+  // stock_updated_at 최신값 표시
+  const times = all.map(r => r.stock_updated_at).filter(Boolean).sort().reverse();
+  if (times.length) {
+    const d = new Date(times[0]);
+    const t = d.toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'});
+    document.getElementById('time-sellmate').textContent = t;
+  }
   return all;
 }
 
@@ -480,6 +536,8 @@ async function loadShopify() {
   if (!res.ok) throw new Error('Shopify fetch failed: ' + res.status);
   const data = await res.json();
   document.getElementById('stat-shopify-count').textContent = data.length.toLocaleString();
+  const now = new Date();
+  document.getElementById('time-shopify').textContent = now.toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'});
   return data;
 }
 
@@ -502,18 +560,45 @@ function mergeData() {
       sku: sh.sku || '',
       shopify_stock: sh.inventory,
       sellmate_stock: sm ? sm.stock : null,
+      category: sm ? sm.category : '',
       vendor_stock: null,
       _source: 'shopify'
     };
   });
 
   mergedRows = rows;
+  renderCategoryChips();
+}
+
+function renderCategoryChips() {
+  const cats = [...new Set(mergedRows.map(r => r.category).filter(Boolean))].sort();
+  const row = document.getElementById('filter-row');
+  // 전체 버튼만 남기고 나머지 제거
+  row.querySelectorAll('[data-cat]:not([data-cat="all"])').forEach(el => el.remove());
+  for (const cat of cats) {
+    const btn = document.createElement('button');
+    btn.className = 'chip';
+    btn.dataset.cat = cat;
+    btn.textContent = cat;
+    btn.onclick = function() { selectCat(this); };
+    row.appendChild(btn);
+  }
+}
+
+function selectCat(el) {
+  document.querySelectorAll('#filter-row .chip').forEach(c => c.classList.remove('on'));
+  el.classList.add('on');
+  activeCat = el.dataset.cat;
+  renderTable();
 }
 
 // ── 테이블 렌더 ──
 function renderTable() {
   const q = document.getElementById('search-input').value.toLowerCase().trim();
   let rows = mergedRows;
+  if (activeCat && activeCat !== 'all') {
+    rows = rows.filter(r => r.category === activeCat);
+  }
   if (q) {
     rows = rows.filter(r =>
       r.product_title.toLowerCase().includes(q) ||
