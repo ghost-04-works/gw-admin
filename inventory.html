@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GW · 재고 현황</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+<style>
+@font-face {
+  font-family: 'GmarketSans';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansMedium.woff') format('woff');
+  font-weight: 500;
+}
+@font-face {
+  font-family: 'GmarketSans';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansBold.woff') format('woff');
+  font-weight: 700;
+}
+</style>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg2: #f8f8f8;
+    --bg3: #f2f2f2;
+    --border: #e8e8e8;
+    --border2: #d4d4d4;
+    --text: #111111;
+    --text2: #555555;
+    --text3: #999999;
+    --accent: #111111;
+    --accent2: #333333;
+    --red: #c0392b;
+    --green: #2e7d32;
+    --shopify: #522dd4;
+    --mono: 'GmarketSans', 'Pretendard', sans-serif;
+    --sans: 'Pretendard', 'Noto Sans KR', sans-serif;
+    --r: 4px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(10px);
+    z-index: 100;
+  }
+
+  .logo {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    color: var(--text);
+  }
+  .logo span { color: var(--accent); }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .conn-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text2);
+  }
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--text3);
+    transition: background .3s;
+  }
+  .dot.ok { background: #4caf50; }
+  .dot.err { background: var(--red); }
+  .dot.loading { background: #ff9800; animation: blink .8s ease-in-out infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  .btn-nav {
+    background: transparent;
+    border: 1px solid var(--border2);
+    border-radius: var(--r);
+    color: var(--text2);
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .05em;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: all .15s;
+    white-space: nowrap;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+  }
+  .btn-nav:hover { border-color: var(--accent); color: var(--accent); }
+
+  .btn-refresh {
+    background: var(--accent);
+    border: none;
+    border-radius: var(--r);
+    color: #fff;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .05em;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: background .15s;
+    white-space: nowrap;
+  }
+  .btn-refresh:hover { background: var(--accent2); }
+  .btn-refresh:disabled { opacity: .5; cursor: default; }
+
+  /* ── TOOLBAR ── */
+  .toolbar {
+    padding: 16px 24px 0;
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .search-input-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 200px;
+  }
+  .search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text3);
+    font-size: 14px;
+    pointer-events: none;
+  }
+  input[type="text"] {
+    width: 100%;
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: var(--r);
+    padding: 9px 12px 9px 36px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 13px;
+    outline: none;
+    transition: border-color .2s;
+  }
+  input[type="text"]:focus { border-color: var(--accent); }
+  input[type="text"]::placeholder { color: var(--text3); }
+
+  .updated-at {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text3);
+    white-space: nowrap;
+  }
+
+  /* ── STATS ── */
+  .stats-row {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 12px 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+
+  .stat-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text3);
+  }
+  .stat-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+  }
+  .stat-dot.sellmate { background: var(--accent); }
+  .stat-dot.shopify { background: var(--shopify); }
+  .stat-dot.vendor { background: var(--text3); }
+
+  .stat-item b { color: var(--text); font-size: 13px; }
+
+  /* ── TABLE ── */
+  .table-wrap {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 16px 24px 60px;
+    overflow-x: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    overflow: hidden;
+  }
+
+  thead tr { background: var(--bg3); border-bottom: 1px solid var(--border2); }
+
+  th {
+    padding: 10px 14px;
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .1em;
+    color: var(--text3);
+    font-weight: 400;
+    white-space: nowrap;
+  }
+  th.num { text-align: right; }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background .1s;
+  }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--bg2); }
+
+  td {
+    padding: 10px 14px;
+    font-size: 13px;
+    vertical-align: middle;
+  }
+  td.num {
+    text-align: right;
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+
+  .td-product { font-weight: 500; }
+  .td-variant { color: var(--text2); font-size: 12px; }
+  .td-sku { font-family: var(--mono); font-size: 11px; color: var(--text3); }
+
+  .stock-val { font-weight: 600; }
+  .stock-val.high { color: var(--green); }
+  .stock-val.mid { color: #e67e22; }
+  .stock-val.low { color: var(--red); }
+  .stock-val.zero { color: var(--text3); }
+  .stock-val.dash { color: var(--text3); font-weight: 400; }
+
+  .vendor-cell {
+    color: var(--text3);
+    font-size: 12px;
+    font-style: italic;
+  }
+
+  /* ── EMPTY / LOADING ── */
+  .empty {
+    padding: 80px 24px;
+    text-align: center;
+    color: var(--text3);
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: .06em;
+  }
+  .empty .em-icon { font-size: 32px; margin-bottom: 12px; }
+
+  .loading-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 80px;
+    color: var(--text3);
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid var(--border2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin .6s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  @media (max-width: 640px) {
+    header { padding: 12px 16px; }
+    .toolbar, .stats-row, .table-wrap { padding-left: 16px; padding-right: 16px; }
+  }
+</style>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+
+<!-- 잠금 화면 -->
+<div id="lock-screen" style="display:flex;position:fixed;inset:0;background:#ffffff;z-index:999;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:40px;">
+  <div style="font-family:'GmarketSans',sans-serif;font-size:22px;font-weight:700;letter-spacing:.12em;color:#111111;">GEON<span style="color:#999999;">.</span>inventory</div>
+  <div style="font-family:'Pretendard',sans-serif;font-size:13px;color:#555555;text-align:center;line-height:1.6;">GEONWORKS 계정으로 로그인하세요<br>(@geon.works)</div>
+  <div id="g-signin-btn"></div>
+  <div id="lock-error" style="font-family:'Pretendard',sans-serif;font-size:12px;color:#c0392b;min-height:18px;text-align:center;"></div>
+</div>
+
+<header>
+  <div class="logo">GEON<span>.</span>inventory</div>
+  <div class="header-right">
+    <div class="conn-badge">
+      <div class="dot" id="dot-sellmate"></div>
+      <span id="label-sellmate">Sellmate</span>
+    </div>
+    <div class="conn-badge">
+      <div class="dot" id="dot-shopify"></div>
+      <span id="label-shopify">Shopify</span>
+    </div>
+    <a href="index.html" class="btn-nav">← 제품 검색</a>
+    <button class="btn-refresh" id="btn-refresh" onclick="loadAll()">↻ 새로고침</button>
+  </div>
+</header>
+
+<div class="toolbar">
+  <div class="search-input-wrap">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="search-input" placeholder="제품명 또는 옵션 검색..." oninput="renderTable()">
+  </div>
+  <div class="updated-at" id="updated-at"></div>
+</div>
+
+<div class="stats-row" id="stats-row" style="display:none;">
+  <div class="stat-item">
+    <div class="stat-dot sellmate"></div>
+    <span>셀메이트 <b id="stat-sellmate-count">-</b>개</span>
+  </div>
+  <div class="stat-item">
+    <div class="stat-dot shopify"></div>
+    <span>Shopify <b id="stat-shopify-count">-</b>개 variant</span>
+  </div>
+</div>
+
+<div class="table-wrap">
+  <div id="loading" class="loading-wrap">
+    <div class="spinner"></div>
+    <span>데이터 불러오는 중...</span>
+  </div>
+  <div id="table-container" style="display:none;">
+    <table>
+      <thead>
+        <tr>
+          <th>제품명</th>
+          <th>옵션</th>
+          <th>SKU</th>
+          <th class="num" style="color:#522dd4;">Shopify 재고</th>
+          <th class="num">셀메이트 재고</th>
+          <th class="num" style="color:var(--text3);">벤더사 재고</th>
+        </tr>
+      </thead>
+      <tbody id="table-body"></tbody>
+    </table>
+    <div id="empty" class="empty" style="display:none;">
+      <div class="em-icon">📦</div>
+      <div>검색 결과가 없습니다</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://yqpskohzmnfiymjrgdxj.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxcHNrb2h6bW5maXltanJnZHhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MjQwMTgsImV4cCI6MjA5NDAwMDAxOH0.Wkg3SIKuMQaJDVJYWFdaFKcSY2afAGRzfu1MYMWaTNU';
+const GOOGLE_CLIENT_ID = '666157816733-0uu1dkoda0ljjslrd479j371snkj62t7.apps.googleusercontent.com';
+
+let sellmateData = [];   // [{barcode, product_name, option_name, stock}]
+let shopifyData  = [];   // [{product_title, variant_title, sku, inventory}]
+let mergedRows   = [];   // 최종 합산
+
+// ── Google OAuth ──
+window.onload = () => {
+  google.accounts.id.initialize({
+    client_id: GOOGLE_CLIENT_ID,
+    callback: handleCredential,
+    auto_select: true,
+  });
+  google.accounts.id.renderButton(document.getElementById('g-signin-btn'), {
+    theme: 'outline', size: 'large', text: 'signin_with', locale: 'ko'
+  });
+  const saved = sessionStorage.getItem('gw_user');
+  if (saved) { unlock(JSON.parse(saved)); }
+};
+
+function handleCredential(resp) {
+  const payload = JSON.parse(atob(resp.credential.split('.')[1]));
+  if (!payload.email || !payload.email.endsWith('@geon.works')) {
+    document.getElementById('lock-error').textContent = '@geon.works 계정만 접근 가능합니다.';
+    return;
+  }
+  sessionStorage.setItem('gw_user', JSON.stringify(payload));
+  unlock(payload);
+}
+
+function unlock(payload) {
+  document.getElementById('lock-screen').style.display = 'none';
+  loadAll();
+}
+
+// ── 데이터 로드 ──
+async function loadAll() {
+  document.getElementById('btn-refresh').disabled = true;
+  document.getElementById('loading').style.display = 'flex';
+  document.getElementById('table-container').style.display = 'none';
+  document.getElementById('stats-row').style.display = 'none';
+
+  setDot('sellmate', 'loading');
+  setDot('shopify', 'loading');
+
+  const [sm, sh] = await Promise.allSettled([loadSellmate(), loadShopify()]);
+
+  if (sm.status === 'fulfilled') { sellmateData = sm.value; setDot('sellmate', 'ok'); }
+  else { sellmateData = []; setDot('sellmate', 'err'); console.error(sm.reason); }
+
+  if (sh.status === 'fulfilled') { shopifyData = sh.value; setDot('shopify', 'ok'); }
+  else { shopifyData = []; setDot('shopify', 'err'); console.error(sh.reason); }
+
+  mergeData();
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('table-container').style.display = 'block';
+  document.getElementById('stats-row').style.display = 'flex';
+  document.getElementById('btn-refresh').disabled = false;
+  document.getElementById('updated-at').textContent = '기준: ' + new Date().toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'});
+  renderTable();
+}
+
+async function loadSellmate() {
+  // Supabase products 테이블에서 재고 조회
+  let all = [];
+  let from = 0;
+  const size = 1000;
+  while (true) {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/products?select=barcode,product_name,option_name,stock&is_active=eq.true&order=product_name.asc,option_name.asc&limit=${size}&offset=${from}`,
+      { headers: { apikey: SUPABASE_ANON, Authorization: 'Bearer ' + SUPABASE_ANON } }
+    );
+    if (!res.ok) throw new Error('Sellmate fetch failed: ' + res.status);
+    const data = await res.json();
+    all = all.concat(data);
+    if (data.length < size) break;
+    from += size;
+  }
+  document.getElementById('stat-sellmate-count').textContent = all.length.toLocaleString();
+  return all;
+}
+
+async function loadShopify() {
+  const res = await fetch(
+    `${SUPABASE_URL}/functions/v1/shopify-inventory`,
+    { headers: { apikey: SUPABASE_ANON, Authorization: 'Bearer ' + SUPABASE_ANON } }
+  );
+  if (!res.ok) throw new Error('Shopify fetch failed: ' + res.status);
+  const data = await res.json();
+  document.getElementById('stat-shopify-count').textContent = data.length.toLocaleString();
+  return data;
+}
+
+// ── 데이터 합산 ──
+// Shopify variant를 기준으로, 셀메이트는 SKU 매칭 (추후 확장)
+function mergeData() {
+  // Shopify 기준으로 row 생성
+  const rows = shopifyData.map(sh => ({
+    product_title: sh.product_title,
+    variant_title: sh.variant_title === 'Default Title' ? '-' : sh.variant_title,
+    sku: sh.sku || '',
+    shopify_stock: sh.inventory,
+    sellmate_stock: null,  // SKU 매핑 추후 추가
+    vendor_stock: null,    // 구글 시트 추후 추가
+    _source: 'shopify'
+  }));
+
+  mergedRows = rows;
+}
+
+// ── 테이블 렌더 ──
+function renderTable() {
+  const q = document.getElementById('search-input').value.toLowerCase().trim();
+  let rows = mergedRows;
+  if (q) {
+    rows = rows.filter(r =>
+      r.product_title.toLowerCase().includes(q) ||
+      r.variant_title.toLowerCase().includes(q) ||
+      r.sku.toLowerCase().includes(q)
+    );
+  }
+
+  const tbody = document.getElementById('table-body');
+  const empty = document.getElementById('empty');
+
+  if (rows.length === 0) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = rows.map(r => `
+    <tr>
+      <td class="td-product">${esc(r.product_title)}</td>
+      <td class="td-variant">${esc(r.variant_title)}</td>
+      <td class="td-sku">${esc(r.sku) || '<span style="color:var(--text3)">—</span>'}</td>
+      <td class="num">${stockBadge(r.shopify_stock, 'shopify')}</td>
+      <td class="num">${stockBadge(r.sellmate_stock, 'sellmate')}</td>
+      <td class="num vendor-cell">—</td>
+    </tr>
+  `).join('');
+}
+
+function stockBadge(val, source) {
+  if (val === null || val === undefined) return '<span style="color:var(--text3)">—</span>';
+  const n = Number(val);
+  let cls = 'dash';
+  if (n > 100) cls = 'high';
+  else if (n > 20) cls = 'mid';
+  else if (n > 0) cls = 'low';
+  else cls = 'zero';
+  const color = source === 'shopify' ? ';color:#522dd4' : '';
+  return `<span class="stock-val ${cls}" style="${color}">${n.toLocaleString()}</span>`;
+}
+
+function setDot(id, state) {
+  const dot = document.getElementById('dot-' + id);
+  dot.className = 'dot ' + state;
+}
+
+function esc(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>
