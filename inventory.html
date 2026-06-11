@@ -392,7 +392,7 @@ const SUPABASE_URL = 'https://yqpskohzmnfiymjrgdxj.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxcHNrb2h6bW5maXltanJnZHhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MjQwMTgsImV4cCI6MjA5NDAwMDAxOH0.Wkg3SIKuMQaJDVJYWFdaFKcSY2afAGRzfu1MYMWaTNU';
 const GOOGLE_CLIENT_ID = '666157816733-0uu1dkoda0ljjslrd479j371snkj62t7.apps.googleusercontent.com';
 
-let sellmateData = [];   // [{barcode, product_name, option_name, stock}]
+let sellmateData = [];   // [{barcode, product_name, option, stock}]
 let shopifyData  = [];   // [{product_title, variant_title, sku, inventory}]
 let mergedRows   = [];   // 최종 합산
 
@@ -459,7 +459,7 @@ async function loadSellmate() {
   const size = 1000;
   while (true) {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/products?select=barcode,product_name,option_name,stock&is_active=eq.true&order=product_name.asc,option_name.asc&limit=${size}&offset=${from}`,
+      `${SUPABASE_URL}/rest/v1/products?select=barcode,product_name,option,stock&is_active=eq.true&order=product_name.asc,option.asc&limit=${size}&offset=${from}`,
       { headers: { apikey: SUPABASE_ANON, Authorization: 'Bearer ' + SUPABASE_ANON } }
     );
     if (!res.ok) throw new Error('Sellmate fetch failed: ' + res.status);
