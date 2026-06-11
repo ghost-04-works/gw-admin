@@ -392,7 +392,7 @@ const SUPABASE_URL = 'https://yqpskohzmnfiymjrgdxj.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxcHNrb2h6bW5maXltanJnZHhqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0MjQwMTgsImV4cCI6MjA5NDAwMDAxOH0.Wkg3SIKuMQaJDVJYWFdaFKcSY2afAGRzfu1MYMWaTNU';
 const GOOGLE_CLIENT_ID = '666157816733-0uu1dkoda0ljjslrd479j371snkj62t7.apps.googleusercontent.com';
 
-let sellmateData = [];   // [{barcode, product_name, option, stock}]
+let sellmateData = [];   // [{barcode, product_name, option_name, stock}]
 let shopifyData  = [];   // [{product_title, variant_title, sku, inventory}]
 let mergedRows   = [];   // 최종 합산
 
@@ -484,18 +484,28 @@ async function loadShopify() {
 }
 
 // ── 데이터 합산 ──
-// Shopify variant를 기준으로, 셀메이트는 SKU 매칭 (추후 확장)
 function mergeData() {
-  // Shopify 기준으로 row 생성
-  const rows = shopifyData.map(sh => ({
-    product_title: sh.product_title,
-    variant_title: sh.variant_title === 'Default Title' ? '-' : sh.variant_title,
-    sku: sh.sku || '',
-    shopify_stock: sh.inventory,
-    sellmate_stock: null,  // SKU 매핑 추후 추가
-    vendor_stock: null,    // 구글 시트 추후 추가
-    _source: 'shopify'
-  }));
+  // 셀메이트 바코드 맵 (하이픈 제거해서 정규화)
+  const smMap = {};
+  for (const sm of sellmateData) {
+    const key = (sm.barcode || '').replace(/-/g, '').toUpperCase();
+    if (key) smMap[key] = sm;
+  }
+
+  // Shopify 기준으로 row 생성, 셀메이트 SKU 매칭
+  const rows = shopifyData.map(sh => {
+    const skuKey = (sh.sku || '').replace(/-/g, '').toUpperCase();
+    const sm = smMap[skuKey] || null;
+    return {
+      product_title: sh.product_title,
+      variant_title: sh.variant_title === 'Default Title' ? '-' : sh.variant_title,
+      sku: sh.sku || '',
+      shopify_stock: sh.inventory,
+      sellmate_stock: sm ? sm.stock : null,
+      vendor_stock: null,
+      _source: 'shopify'
+    };
+  });
 
   mergedRows = rows;
 }
