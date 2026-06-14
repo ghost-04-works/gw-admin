@@ -345,6 +345,8 @@
   .chip:hover { border-color: var(--accent); color: var(--accent); }
   .chip.on { border-color: var(--accent); color: #fff; background: var(--accent); }
 
+  .has-tip:hover { opacity: .8; }
+
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
@@ -543,28 +545,61 @@ async function loadShopify() {
 
 // ── 데이터 합산 ──
 function mergeData() {
-  // 셀메이트 바코드 맵 (하이픈 제거해서 정규화)
-  const smMap = {};
-  for (const sm of sellmateData) {
-    const key = (sm.barcode || '').replace(/-/g, '').toUpperCase();
-    if (key) smMap[key] = sm;
+  const normKey = s => (s || '').replace(/-/g, '').toUpperCase();
+
+  // Shopify: SKU 기준으로 재고 합산 + 페이지별 상세 보관
+  const shMap = {};
+  for (const sh of shopifyData) {
+    const key = normKey(sh.sku);
+    if (!key) continue;
+    if (!shMap[key]) {
+      shMap[key] = { total: 0, details: [] };
+    }
+    shMap[key].total += sh.inventory;
+    shMap[key].details.push({
+      title: sh.product_title,
+      variant: sh.variant_title === 'Default Title' ? '' : sh.variant_title,
+      qty: sh.inventory
+    });
   }
 
-  // Shopify 기준으로 row 생성, 셀메이트 SKU 매칭
-  const rows = shopifyData.map(sh => {
-    const skuKey = (sh.sku || '').replace(/-/g, '').toUpperCase();
-    const sm = smMap[skuKey] || null;
-    return {
-      product_title: sh.product_title,
-      variant_title: sh.variant_title === 'Default Title' ? '-' : sh.variant_title,
-      sku: sh.sku || '',
-      shopify_stock: sh.inventory,
-      sellmate_stock: sm ? sm.stock : null,
-      category: sm ? sm.category : '',
+  // 셀메이트 기준으로 row 생성
+  const rows = [];
+  const usedKeys = new Set();
+
+  for (const sm of sellmateData) {
+    const key = normKey(sm.barcode);
+    usedKeys.add(key);
+    const sh = shMap[key] || null;
+    rows.push({
+      product_name: sm.product_name,
+      option: sm.option,
+      sku: sm.barcode || '',
+      shopify_stock: sh ? sh.total : null,
+      shopify_details: sh ? sh.details : [],
+      sellmate_stock: sm.stock,
+      category: sm.category || '',
       vendor_stock: null,
-      _source: 'shopify'
-    };
-  });
+    });
+  }
+
+  // Shopify에만 있는 제품 (셀메이트에 없는 것)
+  for (const sh of shopifyData) {
+    const key = normKey(sh.sku);
+    if (!key || usedKeys.has(key)) continue;
+    usedKeys.add(key);
+    const shEntry = shMap[key];
+    rows.push({
+      product_name: sh.product_title,
+      option: sh.variant_title === 'Default Title' ? '-' : sh.variant_title,
+      sku: sh.sku || '',
+      shopify_stock: shEntry ? shEntry.total : sh.inventory,
+      shopify_details: shEntry ? shEntry.details : [],
+      sellmate_stock: null,
+      category: '',
+      vendor_stock: null,
+    });
+  }
 
   mergedRows = rows;
   renderCategoryChips();
@@ -601,9 +636,9 @@ function renderTable() {
   }
   if (q) {
     rows = rows.filter(r =>
-      r.product_title.toLowerCase().includes(q) ||
-      r.variant_title.toLowerCase().includes(q) ||
-      r.sku.toLowerCase().includes(q)
+      (r.product_name || '').toLowerCase().includes(q) ||
+      (r.option || '').toLowerCase().includes(q) ||
+      (r.sku || '').toLowerCase().includes(q)
     );
   }
 
@@ -619,14 +654,36 @@ function renderTable() {
 
   tbody.innerHTML = rows.map(r => `
     <tr>
-      <td class="td-product">${esc(r.product_title)}</td>
-      <td class="td-variant">${esc(r.variant_title)}</td>
+      <td class="td-product">${esc(r.product_name)}</td>
+      <td class="td-variant">${esc(r.option)}</td>
       <td class="td-sku">${esc(r.sku) || '<span style="color:var(--text3)">—</span>'}</td>
-      <td class="num">${stockBadge(r.shopify_stock, 'shopify')}</td>
+      <td class="num">${shopifyBadge(r.shopify_stock, r.shopify_details)}</td>
       <td class="num">${stockBadge(r.sellmate_stock, 'sellmate')}</td>
       <td class="num vendor-cell">—</td>
     </tr>
   `).join('');
+}
+
+function shopifyBadge(val, details) {
+  if (val === null || val === undefined) return '<span style="color:var(--text3)">—</span>';
+  const n = Number(val);
+  let cls = 'dash';
+  if (n > 100) cls = 'high';
+  else if (n > 20) cls = 'mid';
+  else if (n > 0) cls = 'low';
+  else cls = 'zero';
+
+  if (!details || details.length <= 1) {
+    return `<span class="stock-val ${cls}" style="color:#522dd4">${n.toLocaleString()}</span>`;
+  }
+
+  // 여러 페이지 합산인 경우 툴팁
+  const tipLines = details.map(d =>
+    esc(d.title) + (d.variant ? ' · ' + esc(d.variant) : '') + ': ' + d.qty.toLocaleString()
+  ).join('&#10;');
+
+  return `<span class="stock-val ${cls} has-tip" style="color:#522dd4;cursor:help;border-bottom:1px dashed #522dd4;"
+    title="${tipLines}">${n.toLocaleString()} <span style="font-size:10px;opacity:.6">(${details.length})</span></span>`;
 }
 
 function stockBadge(val, source) {
