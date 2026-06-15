@@ -390,6 +390,7 @@
   }
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://apis.google.com/js/api.js" async defer></script>
 </head>
 <body>
 
@@ -486,10 +487,12 @@ const GOOGLE_CLIENT_ID = '666157816733-0uu1dkoda0ljjslrd479j371snkj62t7.apps.goo
 
 let sellmateData = [];
 let shopifyData  = [];
+let vendorData   = {};  // {normalizedSku: qty}
 let mergedRows   = [];
 let activeCat    = 'all';
 let sortCol      = null;
-let sortDir      = 'asc';  // 'asc' | 'desc'
+let sortDir      = 'asc';
+window.sheetsToken = null;
 const CATEGORIES = ['switch','keycap','keyboard','stabilizer','plate','pcb','foam','deskmat','cable','bag','tool','lubricant','bumpon','other'];
 
 // ── Google OAuth ──
@@ -498,6 +501,18 @@ window.onload = () => {
     client_id: GOOGLE_CLIENT_ID,
     callback: handleCredential,
     auto_select: true,
+  });
+
+  // Sheets API용 토큰 클라이언트
+  window.tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID,
+    scope: 'https://www.googleapis.com/auth/spreadsheets.readonly',
+    callback: (resp) => {
+      if (resp.access_token) {
+        window.sheetsToken = resp.access_token;
+        loadAll();
+      }
+    },
   });
   google.accounts.id.renderButton(document.getElementById('g-signin-btn'), {
     theme: 'outline', size: 'large', text: 'signin_with', locale: 'ko'
@@ -518,7 +533,11 @@ function handleCredential(resp) {
 
 function unlock(payload) {
   document.getElementById('lock-screen').style.display = 'none';
-  loadAll();
+  if (window.sheetsToken) {
+    loadAll();
+  } else {
+    window.tokenClient.requestAccessToken({ prompt: '' });
+  }
 }
 
 // ── 데이터 로드 ──
@@ -531,13 +550,16 @@ async function loadAll() {
   setDot('sellmate', 'loading');
   setDot('shopify', 'loading');
 
-  const [sm, sh] = await Promise.allSettled([loadSellmate(), loadShopify()]);
+  const [sm, sh, vs] = await Promise.allSettled([loadSellmate(), loadShopify(), loadVendorSheet()]);
 
   if (sm.status === 'fulfilled') { sellmateData = sm.value; setDot('sellmate', 'ok'); }
   else { sellmateData = []; setDot('sellmate', 'err'); console.error(sm.reason); }
 
   if (sh.status === 'fulfilled') { shopifyData = sh.value; setDot('shopify', 'ok'); }
   else { shopifyData = []; setDot('shopify', 'err'); console.error(sh.reason); }
+
+  if (vs.status === 'fulfilled') { vendorData = vs.value; }
+  else { vendorData = {}; console.error(vs.reason); }
 
   mergeData();
   document.getElementById('loading').style.display = 'none';
@@ -588,6 +610,54 @@ async function loadShopify() {
   return data;
 }
 
+async function loadVendorSheet() {
+  if (!window.sheetsToken) return {};
+  const SHEET_ID = '1HPMf_NMmO5KN8nH-iv7oII0NqYiDADf7O9G_Kp8HkYE';
+  const RANGE = 'PRICELIST!A6:M';  // 6행부터 M열까지
+
+  const res = await fetch(
+    `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(RANGE)}`,
+    { headers: { Authorization: 'Bearer ' + window.sheetsToken } }
+  );
+  if (!res.ok) throw new Error('Sheets fetch failed: ' + res.status);
+  const data = await res.json();
+  const rows = data.values || [];
+
+  const normKey = s => (s || '').replace(/-/g, '').toUpperCase().trim();
+  const result = {};
+
+  for (const row of rows) {
+    const qtyRaw  = (row[5] || '').trim();   // F열 (index 5) - 수량
+    const skuRaw  = (row[12] || '').trim();  // M열 (index 12) - SKU
+
+    if (!skuRaw || !qtyRaw) continue;
+
+    // / 로 분리
+    const skus = skuRaw.split('/').map(s => s.trim()).filter(Boolean);
+    const qtys = qtyRaw.split('/').map(s => s.trim()).filter(Boolean);
+
+    for (let i = 0; i < skus.length; i++) {
+      const sku = skus[i];
+      const qtyStr = (qtys[i] || qtys[0] || '').toLowerCase().replace(/,/g, '');
+      if (!sku || sku === '-') continue;
+
+      // 수량 파싱: 30k → 30000, - → null
+      let qty = null;
+      if (qtyStr && qtyStr !== '-') {
+        if (qtyStr.endsWith('k')) {
+          qty = Math.round(parseFloat(qtyStr) * 1000);
+        } else {
+          qty = parseInt(qtyStr) || null;
+        }
+      }
+
+      result[normKey(sku)] = qty;
+    }
+  }
+
+  return result;
+}
+
 // ── 데이터 합산 ──
 function mergeData() {
   const normKey = s => (s || '').replace(/-/g, '').toUpperCase();
@@ -624,7 +694,7 @@ function mergeData() {
       shopify_details: sh ? sh.details : [],
       sellmate_stock: sm.stock,
       category: sm.category || '',
-      vendor_stock: null,
+      vendor_stock: vendorData[normKey(sm.barcode)] ?? null,
     });
   }
 
@@ -642,7 +712,7 @@ function mergeData() {
       shopify_details: shEntry ? shEntry.details : [],
       sellmate_stock: null,
       category: '',
-      vendor_stock: null,
+      vendor_stock: vendorData[key] ?? null,
     });
   }
 
@@ -720,7 +790,7 @@ function renderTable() {
         <td class="td-sku">${esc(r.sku) || '<span style="color:var(--text3)">—</span>'}</td>
         <td class="num">${shopifyBadge(r.shopify_stock, r.shopify_details)}</td>
         <td class="num">${stockBadge(r.sellmate_stock, 'sellmate')}</td>
-        <td class="num vendor-cell">—</td>
+        <td class="num">${stockBadge(r.vendor_stock, 'vendor')}</td>
       `;
       frag.appendChild(tr);
     }
@@ -762,7 +832,9 @@ function stockBadge(val, source) {
   else if (n > 20) cls = 'mid';
   else if (n > 0) cls = 'low';
   else cls = 'zero';
-  const color = source === 'shopify' ? ';color:#522dd4' : '';
+  let color = '';
+  if (source === 'shopify') color = ';color:#522dd4';
+  else if (source === 'vendor') color = ';color:#1a7a4a';
   return `<span class="stock-val ${cls}" style="${color}">${n.toLocaleString()}</span>`;
 }
 
