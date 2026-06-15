@@ -829,7 +829,7 @@ function renderTable() {
         <td class="td-sku">${esc(r.sku) || '<span style="color:var(--text3)">—</span>'}</td>
         <td class="num">${stockBadge(r.vendor_stock, 'vendor')}</td>
         <td class="num">${shopifyBadge(r.shopify_stock, r.shopify_details)}</td>
-        <td class="num">${stockBadge(r.sellmate_stock, 'sellmate')}</td>
+        <td class="num">${r.sku ? `<a href="https://geon.sellmate.co.kr/stock/stock_list_new.asp?Search_How=bcode_no&Search_Key=${encodeURIComponent(r.sku)}&first_in_check=off" target="_blank" style="text-decoration:none;">${stockBadge(r.sellmate_stock, 'sellmate')}</a>` : stockBadge(r.sellmate_stock, 'sellmate')}</td>
       `;
       frag.appendChild(tr);
     }
