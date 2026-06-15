@@ -377,13 +377,6 @@
   }
   .sh-tooltip.visible { display: block; }
 
-  .vscroll-container {
-    position: relative;
-    overflow-y: auto;
-    max-height: calc(100vh - 280px);
-  }
-  .vscroll-spacer-top, .vscroll-spacer-bottom { width: 100%; }
-
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
@@ -447,13 +440,12 @@
   </div>
 </div>
 
-<div class="table-wrap" style="padding-bottom:0;">
+<div class="table-wrap">
   <div id="loading" class="loading-wrap">
     <div class="spinner"></div>
     <span>데이터 불러오는 중...</span>
   </div>
   <div id="table-container" style="display:none;">
-    <div class="vscroll-container" id="vscroll-wrap">
     <table>
       <thead>
         <tr>
@@ -669,13 +661,7 @@ function selectCat(el) {
   renderTable();
 }
 
-// ── 가상 스크롤 ──
-let filteredRows = [];
-let rowHeights = [];
-let ROW_EST = 45;       // 초기 예상 행 높이
-const BUFFER = 5;       // 위아래 여유 행 수
-const CHUNK = 80;       // 한 번에 렌더할 최대 행 수
-
+// ── 테이블 렌더 (DocumentFragment + rAF) ──
 function renderTable() {
   const q = document.getElementById('search-input').value.toLowerCase().trim();
   let rows = mergedRows;
@@ -702,117 +688,37 @@ function renderTable() {
     });
   }
 
-  filteredRows = rows;
-  rowHeights = new Array(rows.length).fill(ROW_EST);
-
+  const tbody = document.getElementById('table-body');
   const empty = document.getElementById('empty');
+
   if (rows.length === 0) {
-    document.getElementById('table-body').innerHTML = '';
+    tbody.innerHTML = '';
     empty.style.display = 'block';
     return;
   }
   empty.style.display = 'none';
 
-  // 스크롤 컨테이너 초기화
-  const wrap = document.getElementById('vscroll-wrap');
-  wrap.scrollTop = 0;
-  renderVisible();
-}
-
-function getRowTop(i) {
-  let top = 0;
-  for (let j = 0; j < i; j++) top += rowHeights[j];
-  return top;
-}
-
-function getTotalHeight() {
-  return rowHeights.reduce((a, b) => a + b, 0);
-}
-
-function renderVisible() {
-  const wrap = document.getElementById('vscroll-wrap');
-  const tbody = document.getElementById('table-body');
-  const scrollTop = wrap.scrollTop;
-  const viewH = wrap.clientHeight;
-
-  // 보이는 범위 계산
-  let start = 0, acc = 0;
-  for (let i = 0; i < filteredRows.length; i++) {
-    if (acc + rowHeights[i] > scrollTop) { start = i; break; }
-    acc += rowHeights[i];
-  }
-  let end = start;
-  acc = getRowTop(start);
-  for (let i = start; i < filteredRows.length; i++) {
-    if (acc > scrollTop + viewH) { end = i; break; }
-    acc += rowHeights[i];
-    end = i + 1;
-  }
-
-  start = Math.max(0, start - BUFFER);
-  end = Math.min(filteredRows.length, end + BUFFER);
-
-  // spacer 높이
-  const topH = getRowTop(start);
-  const botH = getTotalHeight() - getRowTop(end);
-
-  // tbody 재구성
-  const frag = document.createDocumentFragment();
-
-  // top spacer
-  const topSpacer = document.createElement('tr');
-  topSpacer.id = 'spacer-top';
-  const topTd = document.createElement('td');
-  topTd.colSpan = 6;
-  topTd.style.cssText = `padding:0;height:${topH}px;border:none;`;
-  topSpacer.appendChild(topTd);
-  frag.appendChild(topSpacer);
-
-  // 실제 행
-  for (let i = start; i < end; i++) {
-    const r = filteredRows[i];
-    const tr = document.createElement('tr');
-    tr.dataset.idx = i;
-    tr.innerHTML = `
-      <td class="td-product">${esc(r.product_name)}</td>
-      <td class="td-variant">${esc(r.option)}</td>
-      <td class="td-sku">${esc(r.sku) || '<span style="color:var(--text3)">—</span>'}</td>
-      <td class="num">${shopifyBadge(r.shopify_stock, r.shopify_details)}</td>
-      <td class="num">${stockBadge(r.sellmate_stock, 'sellmate')}</td>
-      <td class="num vendor-cell">—</td>
-    `;
-    frag.appendChild(tr);
-  }
-
-  // bottom spacer
-  const botSpacer = document.createElement('tr');
-  botSpacer.id = 'spacer-bot';
-  const botTd = document.createElement('td');
-  botTd.colSpan = 6;
-  botTd.style.cssText = `padding:0;height:${botH}px;border:none;`;
-  botSpacer.appendChild(botTd);
-  frag.appendChild(botSpacer);
-
-  tbody.innerHTML = '';
-  tbody.appendChild(frag);
-
-  // 실제 행 높이 측정 후 업데이트
+  // DocumentFragment로 한 번에 DOM에 붙이기
   requestAnimationFrame(() => {
-    tbody.querySelectorAll('tr[data-idx]').forEach(tr => {
-      const i = parseInt(tr.dataset.idx);
-      rowHeights[i] = tr.getBoundingClientRect().height || ROW_EST;
-    });
+    const frag = document.createDocumentFragment();
+    for (const r of rows) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="td-product">${esc(r.product_name)}</td>
+        <td class="td-variant">${esc(r.option)}</td>
+        <td class="td-sku">${esc(r.sku) || '<span style="color:var(--text3)">—</span>'}</td>
+        <td class="num">${shopifyBadge(r.shopify_stock, r.shopify_details)}</td>
+        <td class="num">${stockBadge(r.sellmate_stock, 'sellmate')}</td>
+        <td class="num vendor-cell">—</td>
+      `;
+      frag.appendChild(tr);
+    }
+    tbody.innerHTML = '';
+    tbody.appendChild(frag);
   });
 }
 
-// 스크롤 이벤트 등록 (데이터 로드 후 호출)
-function initScrollListener() {
-  const wrap = document.getElementById('vscroll-wrap');
-  if (wrap && !wrap._scrollBound) {
-    wrap.addEventListener('scroll', () => renderVisible(), { passive: true });
-    wrap._scrollBound = true;
-  }
-}
+function initScrollListener() {}
 
 function shopifyBadge(val, details) {
   if (val === null || val === undefined) return '<span style="color:var(--text3)">—</span>';
