@@ -678,7 +678,7 @@ async function loadVendorSheet() {
         qty = parseInt(qtyStr) ?? 0;
       }
 
-      result[normKey(sku)] = qty;
+      result[normKey(sku)] = { qty, order: Object.keys(result).length };
     }
   }
 
@@ -721,7 +721,8 @@ function mergeData() {
       shopify_details: sh ? sh.details : [],
       sellmate_stock: sm.stock,
       category: sm.category || '',
-      vendor_stock: normKey(sm.barcode) in vendorData ? vendorData[normKey(sm.barcode)] : null,
+      vendor_stock: normKey(sm.barcode) in vendorData ? vendorData[normKey(sm.barcode)].qty : null,
+      vendor_order: normKey(sm.barcode) in vendorData ? vendorData[normKey(sm.barcode)].order : 99999,
     });
   }
 
@@ -739,7 +740,8 @@ function mergeData() {
       shopify_details: shEntry ? shEntry.details : [],
       sellmate_stock: null,
       category: '',
-      vendor_stock: key in vendorData ? vendorData[key] : null,
+      vendor_stock: key in vendorData ? vendorData[key].qty : null,
+      vendor_order: key in vendorData ? vendorData[key].order : 99999,
     });
   }
 
@@ -779,6 +781,9 @@ function renderTable() {
   }
   if (vendorOnly) {
     rows = rows.filter(r => r.vendor_stock !== null && r.vendor_stock !== undefined);
+    if (!sortCol) {
+      rows = [...rows].sort((a, b) => (a.vendor_order ?? 99999) - (b.vendor_order ?? 99999));
+    }
   }
   if (q) {
     rows = rows.filter(r =>
