@@ -653,19 +653,29 @@ async function loadVendorSheet() {
     const skus = skuRaw.split('/').map(s => s.trim()).filter(Boolean);
     const qtys = qtyRaw.split('/').map(s => s.trim()).filter(Boolean);
 
+    // each: 모든 SKU에 같은 수량 (qtys[0] 적용)
+    // Variable: 텍스트 그대로
     for (let i = 0; i < skus.length; i++) {
       const sku = skus[i];
-      const qtyStr = (qtys[i] || qtys[0] || '').toLowerCase().replace(/,/g, '');
       if (!sku || sku === '-') continue;
 
-      // 수량 파싱: 30k → 30000, - → null
-      let qty = null;
-      if (qtyStr && qtyStr !== '-') {
-        if (qtyStr.endsWith('k')) {
-          qty = Math.round(parseFloat(qtyStr) * 1000);
-        } else {
-          qty = parseInt(qtyStr) || null;
-        }
+      const rawQty = (qtys[i] || qtys[0] || '').trim();
+      const qtyStr = rawQty.toLowerCase().replace(/,/g, '');
+
+      let qty;  // undefined 아닌 명시적 값으로 구분
+      if (!qtyStr || qtyStr === '-') {
+        qty = 0;  // - 는 0으로
+      } else if (qtyStr === 'variable') {
+        qty = 'Variable';  // 텍스트 그대로
+      } else if (qtyStr === 'each') {
+        // each: qtys[0] 수량을 모든 SKU에 적용
+        const baseStr = (qtys[0] || '').toLowerCase().replace(/,/g, '');
+        if (baseStr.endsWith('k')) qty = Math.round(parseFloat(baseStr) * 1000);
+        else qty = parseInt(baseStr) || 0;
+      } else if (qtyStr.endsWith('k')) {
+        qty = Math.round(parseFloat(qtyStr) * 1000);
+      } else {
+        qty = parseInt(qtyStr) ?? 0;
       }
 
       result[normKey(sku)] = qty;
@@ -711,7 +721,7 @@ function mergeData() {
       shopify_details: sh ? sh.details : [],
       sellmate_stock: sm.stock,
       category: sm.category || '',
-      vendor_stock: vendorData[normKey(sm.barcode)] ?? null,
+      vendor_stock: normKey(sm.barcode) in vendorData ? vendorData[normKey(sm.barcode)] : null,
     });
   }
 
@@ -729,7 +739,7 @@ function mergeData() {
       shopify_details: shEntry ? shEntry.details : [],
       sellmate_stock: null,
       category: '',
-      vendor_stock: vendorData[key] ?? null,
+      vendor_stock: key in vendorData ? vendorData[key] : null,
     });
   }
 
@@ -768,7 +778,7 @@ function renderTable() {
     rows = rows.filter(r => r.category === activeCat);
   }
   if (vendorOnly) {
-    rows = rows.filter(r => r.vendor_stock !== null);
+    rows = rows.filter(r => r.vendor_stock !== null && r.vendor_stock !== undefined);
   }
   if (q) {
     rows = rows.filter(r =>
@@ -847,6 +857,7 @@ function shopifyBadge(val, details) {
 
 function stockBadge(val, source) {
   if (val === null || val === undefined) return '<span style="color:var(--text3)">—</span>';
+  if (val === 'Variable') return '<span style="color:var(--text3);font-style:italic;font-size:11px;">Variable</span>';
   const n = Number(val);
   let cls = 'dash';
   if (n > 100) cls = 'high';
