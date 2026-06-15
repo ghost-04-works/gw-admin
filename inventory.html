@@ -819,9 +819,9 @@ function renderTable() {
         <td class="td-product">${esc(r.product_name)}</td>
         <td class="td-variant">${esc(r.option)}</td>
         <td class="td-sku">${esc(r.sku) || '<span style="color:var(--text3)">—</span>'}</td>
+        <td class="num">${stockBadge(r.vendor_stock, 'vendor')}</td>
         <td class="num">${shopifyBadge(r.shopify_stock, r.shopify_details)}</td>
         <td class="num">${stockBadge(r.sellmate_stock, 'sellmate')}</td>
-        <td class="num">${stockBadge(r.vendor_stock, 'vendor')}</td>
       `;
       frag.appendChild(tr);
     }
