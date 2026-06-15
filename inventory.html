@@ -880,11 +880,9 @@ function setDot(id, state) {
   dot.className = 'dot ' + state;
 }
 
-let _sortTimer = null;
 function sortBy(th) {
-  if (_sortTimer) return;  // 처리 중 연타 방지
-
   const col = th.dataset.col;
+  // 같은 컬럼 재클릭: asc → desc → null(기본)
   if (sortCol === col) {
     if (sortDir === 'asc') sortDir = 'desc';
     else { sortCol = null; sortDir = 'asc'; }
@@ -893,20 +891,15 @@ function sortBy(th) {
     sortDir = 'asc';
   }
 
-  document.querySelectorAll('th.sortable').forEach(t => t.classList.remove('asc', 'desc'));
-  if (sortCol) th.classList.add(sortDir);
+  // 헤더 클래스 초기화
+  document.querySelectorAll('th.sortable').forEach(t => {
+    t.classList.remove('asc', 'desc');
+  });
+  if (sortCol) {
+    th.classList.add(sortDir);
+  }
 
-  // 로딩 표시
-  const tbody = document.getElementById('table-body');
-  tbody.style.opacity = '0.3';
-  document.querySelectorAll('th.sortable').forEach(t => t.style.pointerEvents = 'none');
-
-  _sortTimer = setTimeout(() => {
-    renderTable();
-    tbody.style.opacity = '1';
-    document.querySelectorAll('th.sortable').forEach(t => t.style.pointerEvents = '');
-    _sortTimer = null;
-  }, 50);
+  renderTable();
 }
 
 function showTooltip(e, el) {
