@@ -345,7 +345,27 @@
   .chip:hover { border-color: var(--accent); color: var(--accent); }
   .chip.on { border-color: var(--accent); color: #fff; background: var(--accent); }
 
+  .has-tip { position: relative; }
   .has-tip:hover { opacity: .8; }
+
+  .sh-tooltip {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    background: #1a1a1a;
+    color: #fff;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    line-height: 1.8;
+    pointer-events: none;
+    white-space: nowrap;
+    box-shadow: 0 4px 16px rgba(0,0,0,.25);
+    max-width: 340px;
+    white-space: normal;
+  }
+  .sh-tooltip.visible { display: block; }
 
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
@@ -435,6 +455,8 @@
     </div>
   </div>
 </div>
+
+<div class="sh-tooltip" id="sh-tooltip"></div>
 
 <script>
 const SUPABASE_URL = 'https://yqpskohzmnfiymjrgdxj.supabase.co';
@@ -677,13 +699,14 @@ function shopifyBadge(val, details) {
     return `<span class="stock-val ${cls}" style="color:#522dd4">${n.toLocaleString()}</span>`;
   }
 
-  // 여러 페이지 합산인 경우 툴팁
-  const tipLines = details.map(d =>
-    esc(d.title) + (d.variant ? ' · ' + esc(d.variant) : '') + ': ' + d.qty.toLocaleString()
-  ).join('&#10;');
-
-  return `<span class="stock-val ${cls} has-tip" style="color:#522dd4;cursor:help;border-bottom:1px dashed #522dd4;"
-    title="${tipLines}">${n.toLocaleString()} <span style="font-size:10px;opacity:.6">(${details.length})</span></span>`;
+  // 여러 페이지 합산인 경우 커스텀 툴팁
+  const tipData = JSON.stringify(details).replace(/"/g, '&quot;');
+  return `<span class="stock-val ${cls} has-tip" style="color:#522dd4;cursor:pointer;border-bottom:1px dashed #522dd4;"
+    data-details="${tipData}"
+    onmouseenter="showTooltip(event, this)"
+    onmouseleave="hideTooltip()"
+    onmousemove="moveTooltip(event)"
+    >${n.toLocaleString()} <span style="font-size:10px;opacity:.6">(${details.length})</span></span>`;
 }
 
 function stockBadge(val, source) {
@@ -701,6 +724,31 @@ function stockBadge(val, source) {
 function setDot(id, state) {
   const dot = document.getElementById('dot-' + id);
   dot.className = 'dot ' + state;
+}
+
+function showTooltip(e, el) {
+  const details = JSON.parse(el.dataset.details);
+  const tip = document.getElementById('sh-tooltip');
+  tip.innerHTML = details.map(d =>
+    '<span style="color:#aaa">' + esc(d.title) + (d.variant ? ' · ' + esc(d.variant) : '') + '</span><br>' +
+    '<span style="color:#fff;font-size:13px;font-weight:700">' + d.qty.toLocaleString() + '</span>'
+  ).join('<hr style="border:none;border-top:1px solid #333;margin:5px 0">');
+  tip.classList.add('visible');
+  moveTooltip(e);
+}
+
+function moveTooltip(e) {
+  const tip = document.getElementById('sh-tooltip');
+  const x = e.clientX + 14;
+  const y = e.clientY + 14;
+  const tipW = tip.offsetWidth;
+  const tipH = tip.offsetHeight;
+  tip.style.left = (x + tipW > window.innerWidth ? x - tipW - 28 : x) + 'px';
+  tip.style.top = (y + tipH > window.innerHeight ? y - tipH - 28 : y) + 'px';
+}
+
+function hideTooltip() {
+  document.getElementById('sh-tooltip').classList.remove('visible');
 }
 
 function esc(str) {
