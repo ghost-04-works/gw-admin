@@ -345,6 +345,12 @@
   .chip:hover { border-color: var(--accent); color: var(--accent); }
   .chip.on { border-color: var(--accent); color: #fff; background: var(--accent); }
 
+  th.sortable { cursor: pointer; user-select: none; }
+  th.sortable:hover { color: var(--text); }
+  th.sortable.asc .sort-icon::after { content: ' ↑'; }
+  th.sortable.desc .sort-icon::after { content: ' ↓'; }
+  th.sortable:not(.asc):not(.desc) .sort-icon::after { content: ' ↕'; opacity: .3; font-size: 10px; }
+
   .has-tip { position: relative; }
   .has-tip:hover { opacity: .8; }
 
@@ -439,12 +445,12 @@
     <table>
       <thead>
         <tr>
-          <th>제품명</th>
-          <th>옵션</th>
-          <th>SKU</th>
-          <th class="num" style="color:#522dd4;">Shopify 재고</th>
-          <th class="num">셀메이트 재고</th>
-          <th class="num" style="color:var(--text3);">벤더사 재고</th>
+          <th class="sortable" data-col="product_name" onclick="sortBy(this)">제품명 <span class="sort-icon"></span></th>
+          <th class="sortable" data-col="option" onclick="sortBy(this)">옵션 <span class="sort-icon"></span></th>
+          <th class="sortable" data-col="sku" onclick="sortBy(this)">SKU <span class="sort-icon"></span></th>
+          <th class="num sortable" data-col="shopify_stock" onclick="sortBy(this)" style="color:#522dd4;">Shopify 재고 <span class="sort-icon"></span></th>
+          <th class="num sortable" data-col="sellmate_stock" onclick="sortBy(this)">셀메이트 재고 <span class="sort-icon"></span></th>
+          <th class="num sortable" data-col="vendor_stock" onclick="sortBy(this)" style="color:var(--text3);">벤더시트 재고 <span class="sort-icon"></span></th>
         </tr>
       </thead>
       <tbody id="table-body"></tbody>
@@ -467,6 +473,8 @@ let sellmateData = [];
 let shopifyData  = [];
 let mergedRows   = [];
 let activeCat    = 'all';
+let sortCol      = null;
+let sortDir      = 'asc';  // 'asc' | 'desc'
 const CATEGORIES = ['switch','keycap','keyboard','stabilizer','plate','pcb','foam','deskmat','cable','bag','tool','lubricant','bumpon','other'];
 
 // ── Google OAuth ──
@@ -664,6 +672,25 @@ function renderTable() {
     );
   }
 
+  // 정렬
+  if (sortCol) {
+    rows = [...rows].sort((a, b) => {
+      let va = a[sortCol];
+      let vb = b[sortCol];
+      // null은 항상 뒤로
+      if (va === null || va === undefined) return 1;
+      if (vb === null || vb === undefined) return -1;
+      if (typeof va === 'number' && typeof vb === 'number') {
+        return sortDir === 'asc' ? va - vb : vb - va;
+      }
+      va = String(va).toLowerCase();
+      vb = String(vb).toLowerCase();
+      return sortDir === 'asc'
+        ? va.localeCompare(vb, 'ko')
+        : vb.localeCompare(va, 'ko');
+    });
+  }
+
   const tbody = document.getElementById('table-body');
   const empty = document.getElementById('empty');
 
@@ -724,6 +751,28 @@ function stockBadge(val, source) {
 function setDot(id, state) {
   const dot = document.getElementById('dot-' + id);
   dot.className = 'dot ' + state;
+}
+
+function sortBy(th) {
+  const col = th.dataset.col;
+  // 같은 컬럼 재클릭: asc → desc → null(기본)
+  if (sortCol === col) {
+    if (sortDir === 'asc') sortDir = 'desc';
+    else { sortCol = null; sortDir = 'asc'; }
+  } else {
+    sortCol = col;
+    sortDir = 'asc';
+  }
+
+  // 헤더 클래스 초기화
+  document.querySelectorAll('th.sortable').forEach(t => {
+    t.classList.remove('asc', 'desc');
+  });
+  if (sortCol) {
+    th.classList.add(sortDir);
+  }
+
+  renderTable();
 }
 
 function showTooltip(e, el) {
