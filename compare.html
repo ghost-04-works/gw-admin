@@ -1062,11 +1062,19 @@ function runCompatCheck() {
 
   const pairNameKo = { 'CASE × PCB':'케이스와 PCB', 'CASE × PLATE':'케이스와 보강판', 'PCB × PLATE':'PCB와 보강판' };
 
+  function josaEunNeun(word) {
+    const lastChar = word[word.length - 1];
+    const code = lastChar.charCodeAt(0);
+    if (code < 0xAC00 || code > 0xD7A3) return word + '가';
+    const hasJong = (code - 0xAC00) % 28 !== 0;
+    return word + (hasJong ? '이' : '가');
+  }
+
   let reasonText = '';
   if (finalSt === 'err') {
     const errPairLabels = [...new Set(pairs.filter(p => ovSt(p.checks) === 'err').map(p => p.label))];
     const koList = errPairLabels.map(l => pairNameKo[l] || l);
-    reasonText = ` — ${koList.join(', ')}가 호환되지 않습니다.`;
+    reasonText = ` — ${josaEunNeun(koList.join(', '))} 호환되지 않습니다.`;
   } else if (finalSt === 'warn') {
     const warnPairLabels = [...new Set(pairs.filter(p => ovSt(p.checks) === 'warn').map(p => p.label))];
     const koList = warnPairLabels.map(l => pairNameKo[l] || l);
