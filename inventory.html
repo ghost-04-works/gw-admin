@@ -675,7 +675,7 @@ async function loadVendorSheet() {
       } else if (qtyStr.endsWith('k')) {
         qty = Math.round(parseFloat(qtyStr) * 1000);
       } else {
-        qty = parseInt(qtyStr) ?? 0;
+        qty = parseInt(qtyStr) || 0;
       }
 
       const nk = normKey(sku);
