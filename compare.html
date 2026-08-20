@@ -85,7 +85,7 @@
   .cat-num { font-size: 9px; font-weight: 700; letter-spacing: .12em; color: var(--text3); margin-bottom: 2px; }
   .cat-label { font-size: 9px; letter-spacing: .12em; color: var(--text3); text-transform: uppercase; }
   .cat-name { font-size: 14px; font-weight: 500; margin-top: 1px; }
-  .cat-sel-text { font-size: 12px; color: var(--text2); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .cat-sel-text { font-size: 12px; color: var(--text2); margin-top: 3px; max-width: 100%; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; line-height: 1.35; }
   .cat-sel-text.empty { color: var(--text3); }
   .cat-check {
     width: 18px; height: 18px; border-radius: 50%;
@@ -959,11 +959,13 @@ function updateCatLabels() {
       const p = sel[cat];
       const label = p.name + (p.option ? ' / ' + p.option : '');
       nameEl.textContent = label;
+      nameEl.title = label;
       nameEl.classList.remove('empty');
       checkEl.classList.add('done');
       checkEl.innerHTML = '✓';
     } else {
       nameEl.textContent = '선택 안됨';
+      nameEl.title = '';
       nameEl.classList.add('empty');
       checkEl.classList.remove('done');
       checkEl.innerHTML = '';
