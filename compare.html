@@ -669,7 +669,7 @@ function checkCasePCB(c,p){
   }
   const compatOk=p.compatibleCase.includes(c.id);
   if(compatOk)r.push(chk('ok','Compatible Case',`<b>${c.name}</b> 호환 목록 포함`));
-  else r.push(chk('err','Compatible Case',`<b>${c.name}</b> 호환 목록에 없음 — 이 PCB와 호환되지 않습니다`));
+  else r.push(chk('err','Compatible Case',`<b>${c.name}</b> 이 PCB와 호환되지 않습니다`));
   const brOk=inter(c.bottomRow,p.bottomRow);
   if(brOk.length>0)r.push(chk('ok','Bottom Row',`공통 지원: <b>${brOk.join(', ')}</b>`));
   else if(c.bottomRow.includes('WKL')&&p.bottomRow.includes('WK')&&p.spacebar.includes('7U'))r.push(chk('warn','Bottom Row',`WKL 케이스 + WK PCB — <b>7U</b> 사용 시 제한적 호환`));
@@ -708,7 +708,7 @@ function checkCasePCB(c,p){
 function checkCasePlate(c,pl){
   const r=[];
   c.size!==pl.size?r.push(chk('err','Size',`케이스 <b>${c.size}</b> ↔ 보강판 <b>${pl.size}</b> 불일치`)):r.push(chk('ok','Size',`<b>${c.size}</b> 일치`));
-  pl.compatibleCase.includes(c.id)?r.push(chk('ok','Compatible Case',`<b>${c.name}</b> 호환 목록 포함`)):r.push(chk('err','Compatible Case',`<b>${c.name}</b> 호환 목록에 없음 — 이 보강판과 호환되지 않습니다`));
+  pl.compatibleCase.includes(c.id)?r.push(chk('ok','Compatible Case',`<b>${c.name}</b> 호환 목록 포함`)):r.push(chk('err','Compatible Case',`<b>${c.name}</b> 이 보강판과 호환되지 않습니다`));
   if(!c.fLayerNone&&!pl.fLayerNone)
     c.fLayer.some(f=>pl.fLayer.includes(f))?r.push(chk('ok','F Layer',`케이스 <b>${c.fLayer[0]}</b> 지원`)):r.push(chk('err','F Layer',`케이스 <b>${c.fLayer[0]}</b> — 보강판 미지원`));
   const brOk=inter(c.bottomRow,pl.bottomRow);
@@ -728,11 +728,11 @@ function checkPCBPlate(p,pl){
     const names=commonCase.map(id=>{const c=CASES.find(x=>x.id===id);return c?c.name:id;});
     r.push(chk('ok','Compatible Case',`공통 호환 케이스: <b>${names.join(', ')}</b>`));
   }
-  else r.push(chk('err','Compatible Case',`공통 호환 케이스 없음 — PCB와 보강판이 서로 다른 케이스용입니다`));
+  else r.push(chk('err','Compatible Case',`PCB와 보강판이 서로 호환되지 않습니다`));
   p.size!==pl.size?r.push(chk('err','Size',`PCB <b>${p.size}</b> ↔ 보강판 <b>${pl.size}</b> 불일치`)):r.push(chk('ok','Size',`<b>${p.size}</b> 일치`));
   if(!p.fLayerNone&&!pl.fLayerNone){
     const c=inter(p.fLayer,pl.fLayer);
-    c.length>0?r.push(chk('ok','F Layer',`공통: <b>${c.join(', ')}</b>`)):r.push(chk('err','F Layer',`공통 F Layer 없음`));
+    c.length>0?r.push(chk('ok','F Layer',`공통: <b>${c.join(', ')}</b>`)):r.push(chk('err','F Layer',`F열 호환되지 않습니다`));
   }
   const brOk=inter(p.bottomRow,pl.bottomRow);
   if(brOk.length>0)r.push(chk('ok','Bottom Row',`공통 지원: <b>${brOk.join(', ')}</b>`));
