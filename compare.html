@@ -14,6 +14,7 @@
     --ok: #2d7a4f; --ok-bg: #f0faf4;
     --warn: #c47a00; --warn-bg: #fffbf0;
     --err: #c0392b; --err-bg: #fdf2f0;
+    --info: #2d5a8c; --info-bg: #f0f5fa;
     --sel: #111111;
     --r: 2px;
     --font: 'Noto Sans KR', sans-serif;
@@ -363,6 +364,7 @@
   .check-icon.ok { background: var(--ok-bg); color: var(--ok); }
   .check-icon.warn { background: var(--warn-bg); color: var(--warn); }
   .check-icon.err { background: var(--err-bg); color: var(--err); }
+  .check-icon.info { background: var(--info-bg); color: var(--info); }
   .check-field { font-size: 10px; color: var(--text3); width: 68px; flex-shrink: 0; padding-top: 1px; font-weight: 500; }
   .check-msg { flex: 1; color: var(--text2); line-height: 1.5; }
 
@@ -644,10 +646,20 @@
 <script src="data.js"></script>
 <script>
 const CASES=DATA.cases,PCBS=DATA.pcbs,PLATES=DATA.plates;
+const COMBO_NOTES=DATA.comboNotes||[];
 
 const chk=(s,f,m)=>({status:s,field:f,msg:m});
 const inter=(a,b)=>a.filter(x=>b.includes(x));
 const hasAny=(a,b)=>a.some(x=>b.includes(x));
+function comboNoteChecks(pair,caseId,pcbId,pcbSku,plateId,plateSku){
+  return COMBO_NOTES.filter(n=>{
+    if(n.pair!==pair)return false;
+    if(n.caseId&&n.caseId!==caseId)return false;
+    if(n.pcbKey&&n.pcbKey!==pcbId&&n.pcbKey!==pcbSku)return false;
+    if(n.plateKey&&n.plateKey!==plateId&&n.plateKey!==plateSku)return false;
+    return true;
+  }).map(n=>chk(n.level||'info','참고',n.message));
+}
 
 function checkCasePCB(c,p){
   const r=[];
@@ -689,6 +701,7 @@ function checkCasePCB(c,p){
       oc.includes('(included)')||oc.includes('(solderable)')?r.push(chk('warn','Connection',`USB 직결 불가 — <b>${reqDB.join(', ')}</b> 별도 구매 필요`)):r.push(chk('err','Connection',`연결 방법 없음`));
     }
   }else{r.push(chk('err','Connection',`연결 방식 정보 없음`));}
+  r.push(...comboNoteChecks('case-pcb',c.id,p.id,p.skuBase,null,null));
   return r;
 }
 
@@ -704,6 +717,7 @@ function checkCasePlate(c,pl){
   else r.push(chk('err','Bottom Row',`공통 Bottom Row 없음`));
   if(pl.plateType==='Plateless')
     c.platelessSupport==='Yes'?r.push(chk('ok','Plateless',`케이스 Plateless 지원`)):r.push(chk('err','Plateless',`케이스 Plateless 미지원`));
+  r.push(...comboNoteChecks('case-plate',c.id,null,null,pl.id,pl.skuBase));
   return r;
 }
 
@@ -733,6 +747,7 @@ function checkPCBPlate(p,pl){
     else if(p.platelessSupport==='Not Recommended')r.push(chk('warn','Plateless',`Plateless 권장 안함 — 두께 <b>${p.thickness}</b>`));
     else r.push(chk('err','Plateless',`Plateless 불가 — 두께 <b>${p.thickness}</b>`));
   }
+  r.push(...comboNoteChecks('pcb-plate',null,p.id,p.skuBase,pl.id,pl.skuBase));
   return r;
 }
 
@@ -1342,7 +1357,7 @@ function updateCompatBtn() {
 }
 
 function runCompatCheck() {
-  const icons = { ok:'✓', warn:'!', err:'✕' };
+  const icons = { ok:'✓', warn:'!', err:'✕', info:'i' };
   const stLabel = { ok:'호환 가능', warn:'조건부 호환', err:'호환 불가' };
   const pairs = [];
   if (sel.case && sel.pcb)   pairs.push({ label:'HOUSING × PCB',   checks:checkCasePCB(sel.case,sel.pcb) });
@@ -1425,7 +1440,7 @@ function runCompatCheck() {
   resultEl.innerHTML = verdictHtml + accessoryHtml + '<div class="compat-section">' +
     pairs.map(pair => {
       const st = ovSt(pair.checks);
-      const visibleChecks = st === 'ok' ? [] : pair.checks.filter(c => c.status !== 'ok');
+      const visibleChecks = st === 'ok' ? pair.checks.filter(c => c.status === 'info') : pair.checks.filter(c => c.status !== 'ok');
       return `<div class="compat-pair">
         <div class="compat-pair-title">${pair.label}<span class="overall-badge ${st}">${icons[st]} ${stLabel[st]}</span></div>
         ${visibleChecks.map(c=>`<div class="check-row"><div class="check-icon ${c.status}">${icons[c.status]}</div><div class="check-field">${c.field}</div><div class="check-msg">${c.msg}</div></div>`).join('')}
