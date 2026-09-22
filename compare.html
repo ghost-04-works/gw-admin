@@ -732,7 +732,7 @@ function checkPCBPlate(p,pl){
   p.size!==pl.size?r.push(chk('err','Size',`PCB <b>${p.size}</b> ↔ 보강판 <b>${pl.size}</b> 불일치`)):r.push(chk('ok','Size',`<b>${p.size}</b> 일치`));
   if(!p.fLayerNone&&!pl.fLayerNone){
     const c=inter(p.fLayer,pl.fLayer);
-    c.length>0?r.push(chk('ok','F Layer',`공통: <b>${c.join(', ')}</b>`)):r.push(chk('err','F Layer',`F열 호환되지 않습니다`));
+    c.length>0?r.push(chk('ok','F Layer',`공통: <b>${c.join(', ')}</b>`)):r.push(chk('err','F Layer',`F열이 호환되지 않습니다`));
   }
   const brOk=inter(p.bottomRow,pl.bottomRow);
   if(brOk.length>0)r.push(chk('ok','Bottom Row',`공통 지원: <b>${brOk.join(', ')}</b>`));
