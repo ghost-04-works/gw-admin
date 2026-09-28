@@ -663,6 +663,13 @@ function comboNoteChecks(pair,caseId,pcbId,pcbSku,plateId,plateSku){
   }).map(n=>chk(n.level||'info',n.field||'참고',n.message));
 }
 
+// 조합 메모에 field(예: Connection, Plateless)가 지정되면 해당 자동 검사 결과를 메모로 대체
+function applyComboNotes(r,notes){
+  const overridden=new Set(notes.map(n=>n.field).filter(f=>f!=='참고'));
+  if(overridden.size)r.splice(0,r.length,...r.filter(x=>!overridden.has(x.field)));
+  r.push(...notes);
+}
+
 function checkCasePCB(c,p){
   const r=[];
   c.size!==p.size?r.push(chk('err','Size',`케이스 <b>${c.size}</b> ↔ PCB <b>${p.size}</b> 불일치`)):r.push(chk('ok','Size',`<b>${c.size}</b> 일치`));
@@ -700,11 +707,7 @@ function checkCasePCB(c,p){
       oc.includes('(included)')||oc.includes('(solderable)')?r.push(chk('warn','Connection',`<b>${reqDB.join(', ')}</b> 필요`)):r.push(chk('err','Connection',`연결 방법 없음`));
     }
   }else{r.push(chk('err','Connection',`연결 방식 정보 없음`));}
-  // 조합 메모에 field(예: Connection)가 지정되면 해당 자동 검사 문구를 메모로 대체
-  const notes=comboNoteChecks('case-pcb',c.id,p.id,p.skuBase,null,null);
-  const overridden=new Set(notes.map(n=>n.field).filter(f=>f!=='참고'));
-  if(overridden.size)r.splice(0,r.length,...r.filter(x=>!overridden.has(x.field)));
-  r.push(...notes);
+  applyComboNotes(r,comboNoteChecks('case-pcb',c.id,p.id,p.skuBase,null,null));
   const compatOk=p.compatibleCase.includes(c.id);
   if(compatOk)r.push(chk('ok','Compatible',`<b>${c.name}</b> 호환 목록 포함`));
   else r.push(chk('err','Compatible',`케이스와 PCB가 서로 호환되지 않습니다`));
@@ -748,7 +751,7 @@ function checkPCBPlate(p,pl){
     else if(p.platelessSupport==='Not Recommended')r.push(chk('warn','Plateless',`Plateless 권장 안함 — 두께 <b>${p.thickness}</b>`));
     else r.push(chk('err','Plateless',`Plateless 불가 — 두께 <b>${p.thickness}</b>`));
   }
-  r.push(...comboNoteChecks('pcb-plate',null,p.id,p.skuBase,pl.id,pl.skuBase));
+  applyComboNotes(r,comboNoteChecks('pcb-plate',null,p.id,p.skuBase,pl.id,pl.skuBase));
   const commonCase=p.compatibleCase.filter(id=>pl.compatibleCase.includes(id));
   if(commonCase.length>0){
     const names=commonCase.map(id=>{const c=CASES.find(x=>x.id===id);return c?c.name:id;});
