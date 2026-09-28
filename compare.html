@@ -650,6 +650,8 @@ const COMBO_NOTES=DATA.comboNotes||[];
 
 const chk=(s,f,m)=>({status:s,field:f,msg:m});
 const inter=(a,b)=>a.filter(x=>b.includes(x));
+// PCB와 보강판의 Bottom Row가 정확히 일치해야 하는 케이스 (WKL↔WK 제한적 호환 미적용)
+const EXACT_BOTTOM_ROW_CASES=['GB0020']; // Glare 60
 const hasAny=(a,b)=>a.some(x=>b.includes(x));
 function comboNoteChecks(pair,caseId,pcbId,pcbSku,plateId,plateSku){
   return COMBO_NOTES.filter(n=>{
@@ -729,11 +731,12 @@ function checkPCBPlate(p,pl){
     c.length>0?r.push(chk('ok','F Layer',`공통: <b>${c.join(', ')}</b>`)):r.push(chk('err','F Layer',`F열이 호환되지 않습니다`));
   }
   const brOk=inter(p.bottomRow,pl.bottomRow);
+  const brExact=EXACT_BOTTOM_ROW_CASES.some(id=>p.compatibleCase.includes(id)&&pl.compatibleCase.includes(id));
   if(brOk.length>0)r.push(chk('ok','Bottom Row',`공통 지원: <b>${brOk.join(', ')}</b>`));
-  else if(p.bottomRow.includes('WKL')&&pl.bottomRow.includes('WK')&&pl.spacebar.includes('7U'))r.push(chk('warn','Bottom Row',`WKL PCB + WK 보강판 — 7U 사용 시 제한적 호환`));
+  else if(!brExact&&p.bottomRow.includes('WKL')&&pl.bottomRow.includes('WK')&&pl.spacebar.includes('7U'))r.push(chk('warn','Bottom Row',`WKL PCB + WK 보강판 — 7U 사용 시 제한적 호환`));
   else r.push(chk('err','Bottom Row',`공통 Bottom Row 없음`));
   const sbOk=inter(p.spacebar,pl.spacebar);
-  sbOk.length>0?r.push(chk('ok','Spacebar',`공통 지원: <b>${sbOk.join(', ')}</b>`)):r.push(chk('err','Spacebar',`공통 Spacebar 없음`));
+  sbOk.length>0?r.push(chk('ok','Spacebar',`공통 지원: <b>${sbOk.join(', ')}</b>`)):r.push(chk('err','Spacebar',`Spacebar 호환 불가`));
   if(p.type==='Hall Effect')
     pl.heCompatible==='Yes'?r.push(chk('ok','HE Compatible',`Hall Effect PCB 호환 보강판`)):r.push(chk('err','HE Compatible',`HE PCB 전용 보강판 아님`));
   if(pl.plateType==='Plateless'){
