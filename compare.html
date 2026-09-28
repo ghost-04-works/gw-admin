@@ -1458,7 +1458,10 @@ function runCompatCheck() {
   resultEl.innerHTML = verdictHtml + accessoryHtml + '<div class="compat-section">' +
     pairs.map(pair => {
       const st = ovSt(pair.checks);
-      const visibleChecks = st === 'ok' ? pair.checks.filter(c => c.status === 'info') : pair.checks.filter(c => c.status !== 'ok');
+      // 호환 가능: 참고만 / 조건부: 조건부+참고 / 호환 불가: 불가 사유만
+      const visibleChecks = st === 'ok' ? pair.checks.filter(c => c.status === 'info')
+        : st === 'err' ? pair.checks.filter(c => c.status === 'err')
+        : pair.checks.filter(c => c.status !== 'ok');
       return `<div class="compat-pair">
         <div class="compat-pair-title">${pair.label}<span class="overall-badge ${st}">${icons[st]} ${stLabel[st]}</span></div>
         ${visibleChecks.map(c=>`<div class="check-row"><div class="check-icon ${c.status}">${icons[c.status]}</div><div class="check-field">${c.field}</div><div class="check-msg">${c.msg}</div></div>`).join('')}
