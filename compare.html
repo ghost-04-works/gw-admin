@@ -749,7 +749,10 @@ function checkPCBPlate(p,pl){
   if(pl.plateType==='Plateless'){
     if(p.platelessSupport==='Yes')r.push(chk('ok','Plateless',`PCB Plateless 지원`));
     else if(p.platelessSupport==='Not Recommended')r.push(chk('warn','Plateless',`Plateless 권장 안함 — 두께 <b>${p.thickness}</b>`));
-    else r.push(chk('err','Plateless',p.type==='Hotswap'?`Plateless 불가 — 핫스왑 지원 PCB`:p.type==='Hall Effect'?`Plateless 불가 — 자석축 지원 PCB`:`Plateless 불가 — 두께 <b>${p.thickness}</b>`));
+    else if(p.type==='Hotswap')r.push(chk('err','Plateless',`Plateless 불가 — 핫스왑 지원 PCB`));
+    else if(p.type==='Hall Effect')r.push(chk('err','Plateless',`Plateless 불가 — 자석축 지원 PCB`));
+    // 1.6mm 두께 사유는 다른 불가 사유가 있으면 화면에서 숨김 (판정에는 반영)
+    else r.push({...chk('err','Plateless',`Plateless 불가 — 두께 <b>${p.thickness}</b>`),hideIfOtherErr:p.thickness==='1.6mm'});
   }
   applyComboNotes(r,comboNoteChecks('pcb-plate',null,p.id,p.skuBase,pl.id,pl.skuBase));
   const commonCase=p.compatibleCase.filter(id=>pl.compatibleCase.includes(id));
@@ -1460,7 +1463,7 @@ function runCompatCheck() {
       const st = ovSt(pair.checks);
       // 호환 가능: 참고만 / 조건부: 조건부+참고 / 호환 불가: 불가 사유만
       const visibleChecks = st === 'ok' ? pair.checks.filter(c => c.status === 'info')
-        : st === 'err' ? pair.checks.filter(c => c.status === 'err')
+        : st === 'err' ? (errs => errs.some(c => !c.hideIfOtherErr) ? errs.filter(c => !c.hideIfOtherErr) : errs)(pair.checks.filter(c => c.status === 'err'))
         : pair.checks.filter(c => c.status !== 'ok');
       return `<div class="compat-pair">
         <div class="compat-pair-title">${pair.label}<span class="overall-badge ${st}">${icons[st]} ${stLabel[st]}</span></div>
