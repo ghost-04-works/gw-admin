@@ -174,31 +174,6 @@
   .btn-check-header:hover { opacity: .85; }
   .btn-check-header:disabled { background: var(--border2); cursor: not-allowed; opacity: 1; }
   .sort-wrap { display: flex; align-items: center; gap: 4px; position: relative; }
-  .sort-btn {
-    display: flex; align-items: center; justify-content: space-between;
-    width: 72px;
-    border: 1px solid var(--border2); border-radius: var(--r);
-    padding: 3px 8px; font-size: 11px; color: var(--text2);
-    background: var(--bg); font-family: var(--font);
-    cursor: pointer; transition: all .12s; white-space: nowrap; user-select: none;
-  }
-  .sort-btn:hover { border-color: var(--text); color: var(--text); }
-  .sort-btn-arrow { font-size: 9px; color: var(--text3); margin-left: 4px; }
-  .sort-dropdown {
-    display: none; position: absolute; top: calc(100% + 4px); left: 0;
-    width: 72px;
-    background: var(--bg); border: 1px solid var(--border2); border-radius: var(--r);
-    box-shadow: 0 4px 12px rgba(0,0,0,.08); z-index: 100; overflow: hidden;
-  }
-  .sort-dropdown.open { display: block; }
-  .sort-option {
-    padding: 6px 10px; font-size: 11px; color: var(--text2);
-    cursor: pointer; transition: background .1s; white-space: nowrap;
-    font-family: var(--font);
-  }
-  .sort-option:hover { background: var(--bg2); color: var(--text); }
-  .sort-option.active { color: var(--sel); font-weight: 600; }
-  .sort-option.disabled { color: var(--border2); cursor: default; pointer-events: none; }
   .sort-dir {
     width: 28px; height: 24px;
     display: flex; align-items: center; justify-content: center;
@@ -589,17 +564,6 @@
       </div>
       <div class="grid-count" id="grid-count"></div>
       <div class="sort-wrap" id="sort-wrap">
-        <button class="sort-btn" id="sort-btn" onclick="toggleSortDropdown(event)">
-          <span id="sort-label">기본</span>
-          <span class="sort-btn-arrow">▾</span>
-        </button>
-        <div class="sort-dropdown" id="sort-dropdown">
-          <div class="sort-option active" data-val="default" onclick="setSortKey('default','기본')">기본</div>
-          <div class="sort-option" data-val="name" onclick="setSortKey('name','이름')">이름</div>
-          <div class="sort-option disabled" data-val="releaseDate">출시일</div>
-          <div class="sort-option" data-val="size" onclick="setSortKey('size','사이즈')">사이즈</div>
-          <div class="sort-option disabled" data-val="price">가격</div>
-        </div>
         <button class="sort-dir" id="sort-dir-btn" onclick="toggleSortDir()">▼</button>
       </div>
       <button class="btn-check-header" id="btn-check-compat-sm" onclick="runCompatCheck()" disabled>호환성 체크</button>
@@ -852,28 +816,11 @@ function getSubOpts(cat) {
 }
 
 // ── TOGGLE FILTERS ──
-function toggleSortDropdown(e) {
-  e.stopPropagation();
-  document.getElementById('sort-dropdown').classList.toggle('open');
-}
-function setSortKey(val, label) {
-  sortKey = val;
-  document.getElementById('sort-label').textContent = label;
-  document.getElementById('sort-dropdown').querySelectorAll('.sort-option').forEach(el => {
-    el.classList.toggle('active', el.dataset.val === val);
-  });
-  document.getElementById('sort-dropdown').classList.remove('open');
-  renderGrid();
-}
 function toggleSortDir() {
   sortDir = sortDir === 'asc' ? 'desc' : 'asc';
   document.getElementById('sort-dir-btn').textContent = sortDir === 'asc' ? '▼' : '▲';
   renderGrid();
 }
-document.addEventListener('click', () => {
-  const dd = document.getElementById('sort-dropdown');
-  if (dd) dd.classList.remove('open');
-});
 function toggleSet(set, v) { if (set.has(v)) set.delete(v); else set.add(v); }
 function toggleSize(v) { toggleSet(fSize, v); renderFilters(); renderGrid(); }
 function toggleSub(v)  { toggleSet(fSub,  v); renderFilters(); renderGrid(); }
@@ -900,11 +847,7 @@ function setPanel(cat) {
   fSize = new Set(); fSub = new Set(); fMount = new Set(); fVenom = 'all'; fRgb = 'all'; fSb = new Set(); fHe = 'all';
   sortKey = 'default'; sortDir = 'asc';
   const sd = document.getElementById('sort-dir-btn');
-  const sl = document.getElementById('sort-label');
-  const dd = document.getElementById('sort-dropdown');
   if (sd) sd.textContent = '▼';
-  if (sl) sl.textContent = '기본';
-  if (dd) dd.querySelectorAll('.sort-option').forEach(el => el.classList.toggle('active', el.dataset.val === 'default'));
   ['case','plate','pcb'].forEach(c => {
     document.getElementById('cat-sec-' + c).classList.toggle('active', c === cat);
   });
