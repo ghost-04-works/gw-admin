@@ -660,7 +660,7 @@ function comboNoteChecks(pair,caseId,pcbId,pcbSku,plateId,plateSku){
     if(n.pcbKey&&n.pcbKey!==pcbId&&n.pcbKey!==pcbSku)return false;
     if(n.plateKey&&n.plateKey!==plateId&&n.plateKey!==plateSku)return false;
     return true;
-  }).map(n=>chk(n.level||'info','참고',n.message));
+  }).map(n=>chk(n.level||'info',n.field||'참고',n.message));
 }
 
 function checkCasePCB(c,p){
@@ -682,10 +682,10 @@ function checkCasePCB(c,p){
     const avail=oc.includes('(included)')?'in':oc.includes('(solderable)')?'sol':'none';
     const dbName=oc.replace(/\s*\(.*\)/,'');
     if(avail==='none')r.push(chk('err','Connection',`도터보드 연결 불가 — PCB 커넥터 없음`));
-    else if(avail==='sol')r.push(chk('warn','Connection',`<b>${dbName}</b> 커넥터 납땜 필요, <b>${reqDB.join(', ')}</b> 별도 구매 필요`));
+    else if(avail==='sol')r.push(chk('warn','Connection',`<b>${reqDB.join(', ')}</b> 필요, <b>${dbName}</b> 커넥터 부착 필요`));
     else{
       const inc=p.daughterboard!=='Not Included'&&reqDB.some(d=>p.daughterboard.toLowerCase().includes(d.toLowerCase().split(' ')[0]));
-      inc?r.push(chk('ok','Connection',`<b>${p.daughterboard}</b> 동봉`)):r.push(chk('warn','Connection',`<b>${reqDB.join(', ')}</b> 별도 구매 필요`));
+      inc?r.push(chk('ok','Connection',`<b>${p.daughterboard}</b> 동봉`)):r.push(chk('warn','Connection',`<b>${reqDB.join(', ')}</b> 필요`));
     }
   }else if(c.dbDirect&&reqDB.length>0){
     if(p.usbConnector){
@@ -693,14 +693,18 @@ function checkCasePCB(c,p){
       const avail=oc.includes('(included)')?'in':oc.includes('(solderable)')?'sol':'none';
       const dbName=oc.replace(/\s*\(.*\)/,'');
       if(avail==='in')r.push(chk('ok','Connection',`<b>${p.usbConnector}</b> 직접 연결 가능 (<b>${reqDB.join(', ')}</b> 연결도 가능)`));
-      else if(avail==='sol')r.push(chk('warn','Connection',`<b>${p.usbConnector}</b> 직접 연결 가능 (<b>${reqDB.join(', ')}</b> 연결 시 <b>${dbName}</b> 납땜 필요)`));
+      else if(avail==='sol')r.push(chk('warn','Connection',`<b>${reqDB.join(', ')}</b> 연결 시 <b>${dbName}</b> 커넥터 부착 필요`));
       else r.push(chk('ok','Connection',`<b>${p.usbConnector}</b> 직접 연결 가능`));
     }else{
       const oc=p.otherConnector||'';
-      oc.includes('(included)')||oc.includes('(solderable)')?r.push(chk('warn','Connection',`USB 직결 불가 — <b>${reqDB.join(', ')}</b> 별도 구매 필요`)):r.push(chk('err','Connection',`연결 방법 없음`));
+      oc.includes('(included)')||oc.includes('(solderable)')?r.push(chk('warn','Connection',`<b>${reqDB.join(', ')}</b> 필요`)):r.push(chk('err','Connection',`연결 방법 없음`));
     }
   }else{r.push(chk('err','Connection',`연결 방식 정보 없음`));}
-  r.push(...comboNoteChecks('case-pcb',c.id,p.id,p.skuBase,null,null));
+  // 조합 메모에 field(예: Connection)가 지정되면 해당 자동 검사 문구를 메모로 대체
+  const notes=comboNoteChecks('case-pcb',c.id,p.id,p.skuBase,null,null);
+  const overridden=new Set(notes.map(n=>n.field).filter(f=>f!=='참고'));
+  if(overridden.size)r.splice(0,r.length,...r.filter(x=>!overridden.has(x.field)));
+  r.push(...notes);
   const compatOk=p.compatibleCase.includes(c.id);
   if(compatOk)r.push(chk('ok','Compatible',`<b>${c.name}</b> 호환 목록 포함`));
   else r.push(chk('err','Compatible',`케이스와 PCB가 서로 호환되지 않습니다`));
