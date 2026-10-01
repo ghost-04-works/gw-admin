@@ -644,7 +644,9 @@ function checkCasePCB(c,p){
   if(brOk.length>0)r.push(chk('ok','Bottom Row',`공통 지원: <b>${brOk.join(', ')}</b>`));
   else if(c.bottomRow.includes('WKL')&&p.bottomRow.includes('WK')&&p.spacebar.includes('7U'))r.push(chk('warn','Bottom Row',`WKL 케이스 + WK PCB — <b>7U</b> 사용 시 제한적 호환`));
   else r.push(chk('err','Bottom Row',`공통 지원 Bottom Row 없음`));
-  r.push(chk('ok','Spacebar',`PCB 지원: <b>${p.spacebar.join(', ')}</b>`));
+  // WKL 배열은 7U 스페이스바가 필요 — 케이스가 WKL을 지원해도 PCB에 7U가 없으면 WKL 사용 불가
+  if(c.bottomRow.includes('WKL')&&!p.spacebar.includes('7U'))r.push(chk('warn','Spacebar',`WKL 배열 호환 불가`));
+  else r.push(chk('ok','Spacebar',`PCB 지원: <b>${p.spacebar.join(', ')}</b>`));
   const reqDB=c.dbBoards;
   if(c.dbDirect&&reqDB.length===0){
     p.usbConnector?r.push(chk('ok','Connection',`<b>${p.usbConnector}</b> 직접 연결 가능`)):r.push(chk('err','Connection',`케이스 USB 직결 전용 — PCB USB 커넥터 없음`));
@@ -768,8 +770,9 @@ const MOUNT_GROUPS = {
   'Tadpole Mount': ['Tadpole Mount', 'Silicon pin/ Tadpole Mount'],
   'Tray Mount': ['Tray Mount'],
   'Plateless Mount': ['Plateless Mount'],
+  'Snap Mount': ['Key Snap Mount', 'PCB Snap Mount', 'Snap Fit Mount'],
 };
-const MOUNT_ORDER = ['Top Mount','Gasket Mount','O-ring Mount','Tadpole Mount','Tray Mount','Plateless Mount','기타'];
+const MOUNT_ORDER = ['Top Mount','Gasket Mount','O-ring Mount','Tadpole Mount','Tray Mount','Plateless Mount','Snap Mount','기타'];
 function normMountList(mountingStyle) {
   const raws = mountingStyle.split(',').map(s => s.trim()).filter(Boolean);
   const groups = new Set();
