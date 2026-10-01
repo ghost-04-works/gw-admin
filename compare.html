@@ -770,8 +770,9 @@ const MOUNT_GROUPS = {
   'Tadpole Mount': ['Tadpole Mount', 'Silicon pin/ Tadpole Mount'],
   'Tray Mount': ['Tray Mount'],
   'Plateless Mount': ['Plateless Mount'],
+  'Snap Mount': ['Key Snap Mount', 'PCB Snap Mount', 'Snap Fit Mount'],
 };
-const MOUNT_ORDER = ['Top Mount','Gasket Mount','O-ring Mount','Tadpole Mount','Tray Mount','Plateless Mount','기타'];
+const MOUNT_ORDER = ['Top Mount','Gasket Mount','O-ring Mount','Tadpole Mount','Tray Mount','Plateless Mount','Snap Mount','기타'];
 function normMountList(mountingStyle) {
   const raws = mountingStyle.split(',').map(s => s.trim()).filter(Boolean);
   const groups = new Set();
