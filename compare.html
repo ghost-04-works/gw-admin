@@ -21,8 +21,7 @@
     --h-site: 60px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { height: 100%; overflow: hidden; }
-  html { zoom: 1.25; }
+  html, body { overflow: visible; }
   body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; line-height: 1.6; display: flex; flex-direction: column; user-select: none; -webkit-user-select: none; }
 
   /* ── HEADER ── */
@@ -45,6 +44,7 @@
     flex: 1;
     min-height: 0;
     overflow: hidden;
+    height: var(--main-h, calc(100vh - 134px));
   }
 
   /* footer — 데스크탑에서 숨김 */
@@ -199,8 +199,8 @@
     display: flex; align-items: center; gap: 10px;
   }
   .pcard:hover { border-color: var(--border2); background: var(--bg2); }
-  .pcard.dimmed { opacity: .15; }
-  .pcard.dimmed:hover { opacity: .6; background: var(--err-bg); }
+  .pcard.is-dimmed { opacity: .15; }
+  .pcard.is-dimmed:hover { opacity: .6; background: var(--err-bg); }
   .pcard.compatible { background: var(--ok-bg); }
   .pcard.compatible:hover { background: var(--ok-bg); border-color: var(--ok); }
   .pcard.selected { border-color: var(--sel); background: var(--sel); color: white; }
@@ -387,9 +387,9 @@
     transition: background .12s;
   }
   .pcard-group-header:hover { background: var(--bg3); }
-  .pcard-group.dimmed { opacity: .15; }
-  .pcard-group.dimmed:hover { opacity: .6; }
-  .pcard-group.dimmed .pcard-group-header:hover { background: var(--err-bg); }
+  .pcard-group.is-dimmed { opacity: .15; }
+  .pcard-group.is-dimmed:hover { opacity: .6; }
+  .pcard-group.is-dimmed .pcard-group-header:hover { background: var(--err-bg); }
   .pcard-group.compatible > .pcard-group-header { background: var(--ok-bg); }
   .pcard-group.compatible > .pcard-group-header:hover { background: var(--ok-bg); border-color: var(--ok); }
   .pcard-group-chevron { margin-left: auto; font-size: 11px; color: var(--text3); transition: transform .2s; flex-shrink: 0; }
@@ -1087,7 +1087,7 @@ function buildCardHTML(p, cat) {
   const isDimmed = !isSel && st === 'err';
   const isCompat = !isSel && otherSelected && st !== 'err';
 
-  return `<div class="pcard${isSel?' selected':''}${isDimmed?' dimmed':''}${isCompat?' compatible':''}" onclick="selectPart('${cat}','${p.id}')">${imgHTML}<div class="pcard-main"><div class="pcard-name">${displayName}</div>${displayOpt?`<div class="pcard-opt">${displayOpt}</div>`:''} ${badgesHTML}</div><div class="pcard-right">${logoHTML}<div class="pcard-check">${isSel?'✓':''}</div>${linkHTML}</div></div>`;
+  return `<div class="pcard${isSel?' selected':''}${isDimmed?' is-dimmed':''}${isCompat?' compatible':''}" onclick="selectPart('${cat}','${p.id}')">${imgHTML}<div class="pcard-main"><div class="pcard-name">${displayName}</div>${displayOpt?`<div class="pcard-opt">${displayOpt}</div>`:''} ${badgesHTML}</div><div class="pcard-right">${logoHTML}<div class="pcard-check">${isSel?'✓':''}</div>${linkHTML}</div></div>`;
 }
 
 function renderGrid() {
@@ -1283,7 +1283,7 @@ function renderGrid() {
     const otherSelected = Object.entries(sel).some(([k,v]) => k !== cat && v !== null);
     if (otherSelected) {
       const allDimmed = group.every(p => ovSt(getChecks(cat, p)) === 'err');
-      if (allDimmed) box.classList.add('dimmed');
+      if (allDimmed) box.classList.add('is-dimmed');
       else box.classList.add('compatible');
     }
 
@@ -1500,6 +1500,14 @@ function updateStickyTops() {
   if (sh) document.documentElement.style.setProperty('--h-site', sh.offsetHeight + 'px');
 }
 
+// ── MAIN 높이: 뷰포트 - 사이트 헤더 (페이지 스크롤은 살리고, 패널은 화면에 맞춤) ──
+function fitMainHeight() {
+  const m = document.querySelector('.main');
+  if (!m) return;
+  const top = m.getBoundingClientRect().top + window.scrollY;
+  document.documentElement.style.setProperty('--main-h', Math.max(400, window.innerHeight - top) + 'px');
+}
+
 // ── MOBILE DROPDOWN ──
 function toggleCatDropdown(e) {
   if (window.innerWidth > 1100) return;
@@ -1523,6 +1531,15 @@ renderResult();
 applyHash();
 requestAnimationFrame(updateStickyTops);
 window.addEventListener('resize', updateStickyTops);
+fitMainHeight();
+window.addEventListener('load', fitMainHeight);
+window.addEventListener('resize', fitMainHeight);
+// 카페24 상단 배너를 닫으면 #container의 padding-top이 바뀌므로 다시 계산
+const _container = document.getElementById('container');
+if (_container) {
+  new MutationObserver(fitMainHeight).observe(_container, { attributes: true, attributeFilter: ['style'] });
+  _container.addEventListener('transitionend', fitMainHeight);
+}
 
 </script>
 </body>
