@@ -177,6 +177,21 @@
   .chip:hover { border-color: var(--accent); color: var(--accent); }
   .chip.on { border-color: var(--accent); color: #fff; background: var(--accent); }
 
+  .sort-toggle {
+    margin-left: auto;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border2);
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--text2);
+    cursor: pointer;
+    transition: all .15s;
+    background: transparent;
+  }
+  .sort-toggle:hover { border-color: var(--accent); color: var(--accent); }
+  .sort-toggle.on { border-color: var(--accent); color: #fff; background: var(--accent); }
+
   /* ── STATS ── */
   .stats-row {
     display: flex;
@@ -582,6 +597,7 @@
 
 <div class="stats-row" id="stats-row" style="display:none">
   <div class="stat-count" id="stat-count"></div>
+  <button class="sort-toggle" id="newest-btn" onclick="toggleNewest()">최신순</button>
 </div>
 
 <div class="results-wrap">
@@ -622,6 +638,7 @@ let allResults = [];
 let currentPage = 1;
 let sortCol = null;
 let sortDir = 'asc';
+let newestFirst = false;
 let selectedCat = 'all';
 
 const headers = {
@@ -698,6 +715,8 @@ async function doSearch() {
 
 // ── 정렬
 function sortBy(col) {
+  newestFirst = false;
+  document.getElementById('newest-btn').classList.remove('on');
   if (sortCol === col) {
     sortDir = sortDir === 'asc' ? 'desc' : 'asc';
   } else {
@@ -708,8 +727,32 @@ function sortBy(col) {
   renderTable();
 }
 
+// ── 최신순 토글 (created_at 내림차순, 같으면 id 내림차순)
+function toggleNewest() {
+  newestFirst = !newestFirst;
+  document.getElementById('newest-btn').classList.toggle('on', newestFirst);
+  sortCol = null;
+  currentPage = 1;
+  renderTable();
+}
+
 function getSorted(data) {
+  if (newestFirst) {
+    return [...data].sort((a, b) => {
+      const n = (b.created_at || '').localeCompare(a.created_at || '');
+      return n !== 0 ? n : (Number(b.id) || 0) - (Number(a.id) || 0);
+    });
+  }
   if (!sortCol) return data;
+  if (sortCol === 'price') {
+    // 숫자 기준, 가격 없는 품목은 방향과 상관없이 맨 아래
+    return [...data].sort((a, b) => {
+      const va = a.price === null || a.price === '' || isNaN(Number(a.price)) ? null : Number(a.price);
+      const vb = b.price === null || b.price === '' || isNaN(Number(b.price)) ? null : Number(b.price);
+      if (va === null || vb === null) return (va === null) - (vb === null);
+      return sortDir === 'asc' ? va - vb : vb - va;
+    });
+  }
   return [...data].sort((a, b) => {
     const va = (a[sortCol] || '').toString().toLowerCase();
     const vb = (b[sortCol] || '').toString().toLowerCase();
